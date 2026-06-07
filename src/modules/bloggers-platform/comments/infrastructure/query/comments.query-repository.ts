@@ -1,20 +1,27 @@
-import {Comment, CommentModelType} from "../../domain/comment.entity";
-import {InjectModel} from "@nestjs/mongoose";
-import {Injectable, NotFoundException} from "@nestjs/common";
-import {CommentViewDto} from "../../api/view-dto/comments.view-dto";
-import {GetCommentsQueryParams} from "../../api/input-dto/get-comments-query-params.input-dto";
-import {PaginatedViewDto} from "../../../../../core/dto/base.paginated.view-dto";
-import {SortDirection} from "../../../../../core/dto/base.query-params.input-dto";
+import {
+    Comment,
+    CommentDocument,
+    CommentModelType,
+} from '../../domain/comment.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CommentViewDto } from '../../api/view-dto/comments.view-dto';
+import { GetCommentsQueryParams } from '../../api/input-dto/get-comments-query-params.input-dto';
+import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
+import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
+import { FlattenMaps, Types } from 'mongoose';
 
 @Injectable()
 export class CommentsQueryRepository {
-    constructor(@InjectModel(Comment.name) private CommentModel: CommentModelType) {
-    }
+    constructor(
+        @InjectModel(Comment.name) private CommentModel: CommentModelType,
+    ) {}
 
     async getCommentById(id: string): Promise<CommentViewDto | null> {
-        const comment = await this.CommentModel
-            .findOne({_id: id, deletedAt: null})
-            .lean();
+        const comment = await this.CommentModel.findOne({
+            _id: id,
+            deletedAt: null,
+        }).lean<FlattenMaps<CommentDocument> & { _id: Types.ObjectId }>();
 
         if (!comment) {
             return null;
@@ -23,31 +30,36 @@ export class CommentsQueryRepository {
         return CommentViewDto.mapToView(comment);
     }
 
-    async getCommentsByPostId({userId, postId, query}: {
-        userId?: string | null,
-        postId: string,
-        query: GetCommentsQueryParams
+    async getCommentsByPostId({
+        userId,
+        postId,
+        query,
+    }: {
+        userId?: string | null;
+        postId: string;
+        query: GetCommentsQueryParams;
     }): Promise<PaginatedViewDto<CommentViewDto>> {
-        const {sortBy, sortDirection, pageNumber, pageSize} =
-            query;
+        const { sortBy, sortDirection, pageNumber, pageSize } = query;
         const sentPostId = postId;
         const sentUserId = userId;
 
         const skip = query.calculateSkip();
         // const skip = (pageNumber - 1) * pageSize;
-        const filter = {deletedAt: null, ...(sentPostId ? {relatedPostId: sentPostId} : {})};
+        const filter = {
+            deletedAt: null,
+            ...(sentPostId ? { relatedPostId: sentPostId } : {}),
+        };
 
         const [commentsList, totalCount] = await Promise.all([
             this.CommentModel.find(filter)
                 .sort({
-                    [sortBy]:
-                        sortDirection === SortDirection.Asc
-                            ? 1
-                            : -1,
+                    [sortBy]: sortDirection === SortDirection.Asc ? 1 : -1,
                 })
                 .skip(skip)
                 .limit(pageSize)
-                .lean(),
+                .lean<
+                    (FlattenMaps<CommentDocument> & { _id: Types.ObjectId })[]
+                >(),
 
             this.CommentModel.countDocuments(filter),
         ]);
@@ -71,10 +83,10 @@ export class CommentsQueryRepository {
         // });
 
         return PaginatedViewDto.mapToView<CommentViewDto>({
-            items: commentsList.map(item => CommentViewDto.mapToView(item)),
+            items: commentsList.map((item) => CommentViewDto.mapToView(item)),
             page: pageNumber,
             size: pageSize,
             totalCount: totalCount,
-        })
+        });
     }
 }

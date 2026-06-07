@@ -17,6 +17,12 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "esModuleInterop": true,
-    "noFallthroughCasesInSwitch": false
-  }
+    "noFallthroughCasesInSwitch": false,
+    "types": ["node", "jest"],
+
+  },
+  "include": [
+    "src/**/*",
+    "test/**/*" // <-- Если твои e2e тесты лежат в отдельной папке test
+  ]
 }

@@ -1,31 +1,36 @@
 //базовый класс view модели для запросов за списком с пагинацией
-import {ApiProperty} from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
-export abstract class PaginatedViewDto<T> {
+export class PaginatedViewDto<T> {
     @ApiProperty({
-        type: () => Object, // ленивый резолвер
+        type: () => Object, // ленивый резолвер для Swagger
         isArray: true,
     })
-    abstract items: T[];
+    items: T[];
     totalCount: number;
     pagesCount: number;
     page: number;
     pageSize: number;
 
-    // статический метод-утилита для мапинга
-    public static mapToView<T>(data: {
+    constructor(data: {
+        items: T[];
+        page: number;
+        size: number;
+        totalCount: number;
+    }) {
+        this.totalCount = data.totalCount;
+        this.pagesCount = Math.ceil(data.totalCount / data.size) || 1; // Защита от NaN, если size = 0
+        this.page = data.page;
+        this.pageSize = data.size;
+        this.items = data.items;
+    }
 
+    public static mapToView<T>(data: {
         items: T[];
         page: number;
         size: number;
         totalCount: number;
     }): PaginatedViewDto<T> {
-        return {
-            totalCount: data.totalCount,
-            pagesCount: Math.ceil(data.totalCount / data.size),
-            page: data.page,
-            pageSize: data.size,
-            items: data.items,
-        };
+        return new PaginatedViewDto<T>(data);
     }
 }

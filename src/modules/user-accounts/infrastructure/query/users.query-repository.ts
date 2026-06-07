@@ -1,23 +1,23 @@
-import {User, UserDocument, UserModelType} from '../../domain/user.entity';
-import {InjectModel} from '@nestjs/mongoose';
-import {UserViewDto} from '../../api/view-dto/users.view-dto';
-import {Injectable, NotFoundException} from '@nestjs/common';
+import { User, UserDocument, UserModelType } from '../../domain/user.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { UserViewDto } from '../../api/view-dto/users.view-dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import {FilterQuery} from 'mongoose';
-import {PaginatedViewDto} from '../../../../core/dto/base.paginated.view-dto';
-import {GetUsersQueryParams} from '../../api/input-dto/get-users-query-params.input-dto';
-import {UserAuthInternalDto} from "../../../authorisation/dto/internal-dto/users.auth-internal-dto";
-import {MeViewDto} from "../../../authorisation/api/view-dto/me.view-dto";
-import {DomainException} from "../../../../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../../../../core/exceptions/domain-exception-codes";
+// import { FilterQuery } from 'mongoose';
+import mongoose from 'mongoose';
+import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
+import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
+import { UserAuthInternalDto } from '../../../authorisation/dto/internal-dto/users.auth-internal-dto';
+import { MeViewDto } from '../../../authorisation/api/view-dto/me.view-dto';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 
 @Injectable()
 export class UsersQueryRepository {
     constructor(
         @InjectModel(User.name)
         private UserModel: UserModelType,
-    ) {
-    }
+    ) {}
 
     async getByIdOrNotFoundFail(id: string): Promise<UserViewDto> {
         const user = await this.UserModel.findOne({
@@ -34,15 +34,13 @@ export class UsersQueryRepository {
         }
 
         return UserViewDto.mapToView(user);
-    };
-
+    }
 
     async getMeByIdOrNotFoundFail(id: string): Promise<MeViewDto> {
         const user = await this.UserModel.findOne({
             _id: id,
             deletedAt: null,
-        })
-            .lean();
+        }).lean();
 
         if (!user) {
             // throw new NotFoundException('user not found');
@@ -53,8 +51,7 @@ export class UsersQueryRepository {
         }
 
         return MeViewDto.mapToView(user);
-    };
-
+    }
 
     async getAll(
         query: GetUsersQueryParams,
@@ -66,19 +63,19 @@ export class UsersQueryRepository {
         if (query.searchLoginTerm) {
             filter.$or = filter.$or || [];
             filter.$or.push({
-                login: {$regex: query.searchLoginTerm, $options: 'i'},
+                login: { $regex: query.searchLoginTerm, $options: 'i' },
             });
         }
 
         if (query.searchEmailTerm) {
             filter.$or = filter.$or || [];
             filter.$or.push({
-                email: {$regex: query.searchEmailTerm, $options: 'i'},
+                email: { $regex: query.searchEmailTerm, $options: 'i' },
             });
         }
 
         const users = await this.UserModel.find(filter)
-            .sort({[query.sortBy]: query.sortDirection})
+            .sort({ [query.sortBy]: query.sortDirection })
             .skip(query.calculateSkip())
             .limit(query.pageSize);
 
@@ -92,42 +89,43 @@ export class UsersQueryRepository {
             page: query.pageNumber,
             size: query.pageSize,
         });
-    };
+    }
 
-
-    async findUserByLogin(loginOrEmail: string): Promise<UserAuthInternalDto | null> {
+    async findUserByLogin(
+        loginOrEmail: string,
+    ): Promise<UserAuthInternalDto | null> {
         const user = await this.UserModel.findOne({
-            $or: [
-                {login: loginOrEmail},
-                {email: loginOrEmail}
-            ],
-            $and: [{deletedAt: null}]
+            $or: [{ login: loginOrEmail }, { email: loginOrEmail }],
+            $and: [{ deletedAt: null }],
         })
-            .select('_id email passwordHash login isEmailConfirmed deletedAt name')
+            .select(
+                '_id email passwordHash login isEmailConfirmed deletedAt name',
+            )
             .lean();
-
 
         if (!user) {
             return null;
         }
 
         return UserAuthInternalDto.mapToView(user);
-    };
+    }
 
-
-    async checkIfUserExists(login: string, email: string): Promise<'login' | 'email' | null> {
+    async checkIfUserExists(
+        login: string,
+        email: string,
+    ): Promise<'login' | 'email' | null> {
         // Проверяем отдельно занят ли логин а потом емейл, т.к. логика платформенных тестов требует указания field: login при отсутствии логина,
         // поэтмоу разделяем ошибки, но можно попробовать вернуть всегда тут такую ошибку
         const loginCount = await this.UserModel.countDocuments({
             login: login,
-            deletedAt: null
+            deletedAt: null,
         });
         if (loginCount > 0) return 'login';
 
         // прроверяем, занят ли email
         const emailCount = await this.UserModel.countDocuments({
             email: email,
-            deletedAt: null
+            deletedAt: null,
         });
         if (emailCount > 0) return 'email';
 
@@ -136,38 +134,61 @@ export class UsersQueryRepository {
     }
 
     // async checkIfUserExists(login: string, email: string): Promise<boolean> {
-      //     return await this.UserModel.countDocuments({
+    //     return await this.UserModel.countDocuments({
     //         $or: [{login: login},{email: email}],
     //         deletedAt: null
     //     })>0;
     // }
 
-    async findUserByConfirmationCode(confirmationCode: string): Promise<UserDocument | null> {
+    async findUserByConfirmationCode(
+        confirmationCode: string,
+    ): Promise<UserDocument | null> {
         return this.UserModel.findOne({
-                $and: [
-                    {"emailConfirmationInfo.confirmationCode": confirmationCode},
-                    {"emailConfirmationInfo.expirationDate": {$gte: new Date()}}, //Date.now() в JavaScript возвращает число (таймстамп в миллисекундах, например 1716924800000). Но в схеме Mongoose поле expirationDate имеет тип Date (хранится как полноценный ISODate объект).
-                    {deletedAt: null}
-                ]
-            }
-        )
+            $and: [
+                { 'emailConfirmationInfo.confirmationCode': confirmationCode },
+                {
+                    'emailConfirmationInfo.expirationDate': {
+                        $gte: new Date(),
+                    },
+                }, //Date.now() в JavaScript возвращает число (таймстамп в миллисекундах, например 1716924800000). Но в схеме Mongoose поле expirationDate имеет тип Date (хранится как полноценный ISODate объект).
+                { deletedAt: null },
+            ],
+        });
     }
 
-    async findConfirmedUserByEmail(sentEmail: string): Promise<UserDocument | null> {
+    async findConfirmedUserByEmail(
+        sentEmail: string,
+    ): Promise<UserDocument | null> {
         return this.UserModel.findOne({
-            $and: [{email: sentEmail}, {isEmailConfirmed: true}, {deletedAt: null}]
-        })
+            $and: [
+                { email: sentEmail },
+                { isEmailConfirmed: true },
+                { deletedAt: null },
+            ],
+        });
     }
 
-    async findUserByRecoveryCode(sentRevoceryCode: string): Promise<UserDocument | null> {
+    async findUserByRecoveryCode(
+        sentRevoceryCode: string,
+    ): Promise<UserDocument | null> {
         return this.UserModel.findOne({
-            $and: [{recoveryCode: sentRevoceryCode}, {recoveryCodeExpirationDate: {$gte: new Date()}}, {deletedAt: null}]
-        })
+            $and: [
+                { recoveryCode: sentRevoceryCode },
+                { recoveryCodeExpirationDate: { $gte: new Date() } },
+                { deletedAt: null },
+            ],
+        });
     }
 
-    async findNotConfirmedByEmail(sentEmail: string): Promise<UserDocument | null> {
+    async findNotConfirmedByEmail(
+        sentEmail: string,
+    ): Promise<UserDocument | null> {
         return this.UserModel.findOne({
-            $and: [{email: sentEmail}, {isEmailConfirmed: false}, {deletedAt: null}]
-        })
+            $and: [
+                { email: sentEmail },
+                { isEmailConfirmed: false },
+                { deletedAt: null },
+            ],
+        });
     }
 }

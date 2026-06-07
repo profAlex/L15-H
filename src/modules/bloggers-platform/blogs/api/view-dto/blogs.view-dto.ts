@@ -1,3 +1,34 @@
+//
+// //     _id: ObjectId;
+// //     id: string;
+// //     name: string;
+// //     description: string;
+// //     websiteUrl: string;
+// //     createdAt: Date;
+// //     isMembership: boolean;
+// import {BlogDocument} from "../../domain/blog.entity";
+//
+// export class BlogViewDto {
+//     id: string;
+//     name: string;
+//     description: string;
+//     websiteUrl: string;
+//     createdAt: Date;
+//     isMembership: boolean;
+//
+//     static mapToView(blog: any): BlogViewDto {
+//         return {
+//             id: blog._id ? blog._id.toString() : blog.id,
+//             name: blog.name,
+//             description: blog.description,
+//             websiteUrl: blog.websiteUrl,
+//             createdAt: blog.createdAt instanceof Date
+//                 ? blog.createdAt.toISOString()
+//                 : blog.createdAt,
+//             isMembership: blog.isMembership
+//         };
+//     }
+// }
 
 //     _id: ObjectId;
 //     id: string;
@@ -6,26 +37,29 @@
 //     websiteUrl: string;
 //     createdAt: Date;
 //     isMembership: boolean;
-import {BlogDocument} from "../../domain/blog.entity";
+import { BlogDocument } from '../../domain/blog.entity';
 
 export class BlogViewDto {
     id: string;
     name: string;
     description: string;
     websiteUrl: string;
-    createdAt: Date;
+    createdAt: string;
     isMembership: boolean;
 
-    static mapToView(blog: any): BlogViewDto {
-        return {
-            id: blog._id ? blog._id.toString() : blog.id,
-            name: blog.name,
-            description: blog.description,
-            websiteUrl: blog.websiteUrl,
-            createdAt: blog.createdAt instanceof Date
+    constructor(blog: BlogDocument) {
+        this.id = blog.id || blog._id.toString();
+        this.name = blog.name;
+        this.description = blog.description;
+        this.websiteUrl = blog.websiteUrl;
+        this.createdAt =
+            blog.createdAt instanceof Date
                 ? blog.createdAt.toISOString()
-                : blog.createdAt,
-            isMembership: blog.isMembership
-        };
+                : new Date(blog.createdAt).toISOString();
+        this.isMembership = blog.isMembership;
+    }
+
+    static mapToView(blog: BlogDocument): BlogViewDto {
+        return new BlogViewDto(blog);
     }
 }
