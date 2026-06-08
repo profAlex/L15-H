@@ -37,7 +37,8 @@
 //     websiteUrl: string;
 //     createdAt: Date;
 //     isMembership: boolean;
-import { BlogDocument } from '../../domain/blog.entity';
+import { Blog, BlogDocument } from '../../domain/blog.entity';
+import { Types } from 'mongoose';
 
 export class BlogViewDto {
     id: string;
@@ -47,7 +48,7 @@ export class BlogViewDto {
     createdAt: string;
     isMembership: boolean;
 
-    constructor(blog: BlogDocument) {
+    constructor(blog: Blog & { _id: Types.ObjectId }) {
         this.id = blog.id || blog._id.toString();
         this.name = blog.name;
         this.description = blog.description;
@@ -56,10 +57,22 @@ export class BlogViewDto {
             blog.createdAt instanceof Date
                 ? blog.createdAt.toISOString()
                 : new Date(blog.createdAt).toISOString();
+        // if (
+        //     blog.createdAt instanceof Date &&
+        //     !isNaN(blog.createdAt.getTime())
+        // ) {
+        //     this.createdAt = blog.createdAt.toISOString();
+        // } else {
+        //     // Если прилетела строка, пробуем её распарсить
+        //     const parsedDate = new Date(blog.createdAt);
+        //     this.createdAt = !isNaN(parsedDate.getTime())
+        //         ? parsedDate.toISOString()
+        //         : new Date().toISOString(); // <-- Спасительный парашют: если дата битая/undefined, берем текущую
+        // }
         this.isMembership = blog.isMembership;
     }
 
-    static mapToView(blog: BlogDocument): BlogViewDto {
+    static mapToView(blog: Blog & { _id: Types.ObjectId }): BlogViewDto {
         return new BlogViewDto(blog);
     }
 }

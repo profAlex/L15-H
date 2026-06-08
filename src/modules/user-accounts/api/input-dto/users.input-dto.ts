@@ -13,17 +13,17 @@ export class CreateUserInputDto {
     @IsString()
     @Length(3, 10)
     @Matches('^[a-zA-Z0-9_-]*$')
-    login?: string;
+    login: string = ''; // Инициализируем пустой строкой
 
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
     @Length(6, 20)
-    password?: string;
+    password: string = ''; // Инициализируем пустой строкой
 
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
     @IsEmail()
-    email?: string;
+    email: string = ''; // Инициализируем пустой строкой
 }

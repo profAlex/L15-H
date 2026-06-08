@@ -1,11 +1,12 @@
-import {BlogsQueryRepository} from "./blogs.query-repository";
-import {Test, TestingModule} from "@nestjs/testing";
-import {getModelToken} from "@nestjs/mongoose";
-import {Blog} from "../../domain/blog.entity";
-import {BlogViewDto} from "../../api/view-dto/blogs.view-dto";
-import {NotFoundException} from "@nestjs/common";
-import {GetBlogsQueryParams} from "../../api/input-dto/get-blogs-query-params.input-dto";
-import {SortDirection} from "../../../../../core/dto/base.query-params.input-dto";
+import { BlogsQueryRepository } from './blogs.query-repository';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { Blog } from '../../domain/blog.entity';
+import { BlogViewDto } from '../../api/view-dto/blogs.view-dto';
+import { NotFoundException } from '@nestjs/common';
+import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
+import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
+import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 
 describe('BlogsQueryRepository', () => {
     let repository: BlogsQueryRepository;
@@ -47,7 +48,12 @@ describe('BlogsQueryRepository', () => {
 
     describe('getBlogByIdOrNotFoundFail', () => {
         it('should return mapped blog if found', async () => {
-            const fakeBlog = { _id: 'id123', name: 'Blog Name', websiteUrl: 'http://url.com' };
+            const fakeBlog = {
+                _id: 'id123',
+                name: 'Blog Name',
+                websiteUrl: 'http://url.com',
+                createdAt: new Date(Date.now() / 1000),
+            };
 
             // Настраиваем цепочку: findOne -> lean (resolved value)
             mockQuery.lean.mockResolvedValue(fakeBlog);
@@ -67,8 +73,9 @@ describe('BlogsQueryRepository', () => {
         it('should throw NotFoundException if blog is missing', async () => {
             mockQuery.lean.mockResolvedValue(null);
 
-            await expect(repository.getBlogByIdOrNotFoundFail('invalid-id'))
-                .rejects.toThrow(NotFoundException);
+            await expect(
+                repository.getBlogByIdOrNotFoundFail('invalid-id'),
+            ).rejects.toThrow(DomainException);
         });
     });
 
@@ -81,7 +88,9 @@ describe('BlogsQueryRepository', () => {
             query.pageSize = 5;
             query.sortDirection = SortDirection.Asc;
 
-            const fakeBlogs = [{ _id: '1', name: 'tech blog' }];
+            const fakeBlogs = [
+                { _id: '1', name: 'tech blog', createdAt: new Date() },
+            ];
             mockQuery.limit.mockResolvedValue(fakeBlogs);
             mockBlogModel.countDocuments.mockResolvedValue(1);
 
@@ -90,9 +99,11 @@ describe('BlogsQueryRepository', () => {
 
             // Assert
             // Проверяем, что фильтр сформирован верно (включая твой if с regex)
-            expect(mockBlogModel.find).toHaveBeenCalledWith(expect.objectContaining({
-                $or: [{ name: { $regex: 'tech', $options: 'i' } }]
-            }));
+            expect(mockBlogModel.find).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    $or: [{ name: { $regex: 'tech', $options: 'i' } }],
+                }),
+            );
 
             // Проверяем вызовы цепочки
             expect(mockQuery.sort).toHaveBeenCalledWith({ [query.sortBy]: 1 });
@@ -129,7 +140,7 @@ describe('BlogsQueryRepository', () => {
             expect(exists).toBe(true);
             expect(mockBlogModel.countDocuments).toHaveBeenCalledWith({
                 _id: 'id',
-                deletedAt: null
+                deletedAt: null,
             });
         });
 

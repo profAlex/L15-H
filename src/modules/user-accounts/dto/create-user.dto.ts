@@ -1,9 +1,9 @@
 export class CreateUserDto {
-  login: string;
-  email: string;
-  password: string;
+    login!: string;
+    email!: string;
+    password!: string;
 }
 
 export class UpdateUserDto {
-  email: string;
+    email: string = '';
 }
