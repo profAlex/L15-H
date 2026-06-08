@@ -1,8 +1,8 @@
-import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose";
-import {ApiProperty, ApiTags} from "@nestjs/swagger";
-import {HydratedDocument, Model} from "mongoose";
-import {CreateBlogDomainDto} from "./dto/create-blog.domain.dto";
-import {UpdateBlogInputDto} from "../dto/create-blog.dto";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ApiProperty, ApiTags } from '@nestjs/swagger';
+import { HydratedDocument, Model } from 'mongoose';
+import { CreateBlogDomainDto } from './dto/create-blog.domain.dto';
+import { UpdateBlogInputDto } from '../dto/create-blog.dto';
 
 // type-fields for reference:
 // export type BloggerCollectionStorageModel = {
@@ -15,28 +15,36 @@ import {UpdateBlogInputDto} from "../dto/create-blog.dto";
 //     isMembership: boolean;
 // };
 
-
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class Blog {
     /**
      * Name of the blog
      * @type {string}
      * @required
      */
-    @ApiProperty({example: 'This is my super blog!', description: 'Blog\'s name'})
-    @Prop({type: String,required: true})
-    name: string;
+    @ApiProperty({
+        example: 'This is my super blog!',
+        description: "Blog's name",
+    })
+    @Prop({ type: String, required: true })
+    name!: string;
 
     /**
      *
      */
-    @ApiProperty({example: 'This is my super blog', description: 'Blog\'s description name'})
-    @Prop({type: String, required: true})
-    description: string;
+    @ApiProperty({
+        example: 'This is my super blog',
+        description: "Blog's description name",
+    })
+    @Prop({ type: String, required: true })
+    description!: string;
 
-    @ApiProperty({example: 'www.my_web_site.org', description: 'Blogger\'s personal website address'})
-    @Prop({type: String, required: true})
-    websiteUrl: string;
+    @ApiProperty({
+        example: 'www.my_web_site.org',
+        description: "Blogger's personal website address",
+    })
+    @Prop({ type: String, required: true })
+    websiteUrl!: string;
 
     /**
      * Creation timestamp
@@ -44,19 +52,23 @@ export class Blog {
      * properties without @Prop for typescript so that they are in the class instance (or in instance methods)
      * @type {Date}
      */
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt!: Date;
+    updatedAt!: Date;
 
     /**
      * Deletion timestamp, nullable, if date exist, means entity soft deleted
      * @type {Date | null}
      */
     @Prop({ type: Date, default: null })
-    deletedAt: Date | null;
+    deletedAt!: Date | null;
 
-    @ApiProperty({example: false, description: 'True if user has not expired membership subscription to blog'})
-    @Prop({type: Boolean, required: true, default: false})
-    isMembership: boolean;
+    @ApiProperty({
+        example: false,
+        description:
+            'True if user has not expired membership subscription to blog',
+    })
+    @Prop({ type: Boolean, required: true, default: false })
+    isMembership!: boolean;
 
     /**
      * Virtual property to get the stringified ObjectId
@@ -67,13 +79,13 @@ export class Blog {
         return this._id.toString();
     }
 
-//     _id: ObjectId;
-//     id: string;
-//     name: string;
-//     description: string;
-//     websiteUrl: string;
-//     createdAt: Date;
-//     isMembership: boolean;
+    //     _id: ObjectId;
+    //     id: string;
+    //     name: string;
+    //     description: string;
+    //     websiteUrl: string;
+    //     createdAt: Date;
+    //     isMembership: boolean;
     /**
      * Factory method to create a Blog instance
      * @param {CreateBlogDto} dto - The data transfer object for blog creation
@@ -90,7 +102,6 @@ export class Blog {
 
         return newBlog as BlogDocument;
     }
-
 
     /**
      * Marks the blog as deleted
@@ -136,7 +147,6 @@ export class Blog {
         }
     }
 }
-
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
 

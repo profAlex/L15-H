@@ -1,14 +1,13 @@
-import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose";
-import {ApiProperty} from "@nestjs/swagger";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ApiProperty } from '@nestjs/swagger';
 import {
     ExtendedPostModel,
     ExtendedPostModelSchema,
-} from "./extended-post-model.schema";
-import {CreatePostDomainDto} from "./dto/create-post.domain.dto";
-import {HydratedDocument, Model} from "mongoose";
-import {LikeStatus} from "../../../../core/enums/like-status.enum";
-import {UpdatePostInputDto} from "../dto/create-post-input.dto";
-
+} from './extended-post-model.schema';
+import { CreatePostDomainDto } from './dto/create-post.domain.dto';
+import { HydratedDocument, Model } from 'mongoose';
+import { LikeStatus } from '../../../../core/enums/like-status.enum';
+import { UpdatePostInputDto } from '../dto/create-post-input.dto';
 
 // post entity structure for reference:
 // export type PostStorageModel = {
@@ -36,46 +35,52 @@ import {UpdatePostInputDto} from "../dto/create-post-input.dto";
 //     login: string;
 // };
 
-
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class Post {
-    @ApiProperty({example: 'This is my post title!', description: 'Post\'s title name'})
-    @Prop({type: String, required: true})
-    title: string;
+    @ApiProperty({
+        example: 'This is my post title!',
+        description: "Post's title name",
+    })
+    @Prop({ type: String, required: true })
+    title!: string;
 
     @ApiProperty({
         example: 'Short description of what is this post all about',
-        description: 'Post\'s short desctiption'
+        description: "Post's short desctiption",
     })
-    @Prop({type: String, required: true})
-    shortDescription: string;
+    @Prop({ type: String, required: true })
+    shortDescription!: string;
 
-    @ApiProperty({example: 'Post\'s content...', description: 'Post\'s content'})
-    @Prop({type: String, required: true})
-    content: string;
+    @ApiProperty({
+        example: "Post's content...",
+        description: "Post's content",
+    })
+    @Prop({ type: String, required: true })
+    content!: string;
 
     @ApiProperty({
         example: '69e36dfcbb7e3d1be7ac9229',
-        description: 'ID of the blog the current post is related/connected to'
+        description: 'ID of the blog the current post is related/connected to',
     })
-    @Prop({type: String, required: true})
-    blogId: string;
+    @Prop({ type: String, required: true })
+    blogId!: string;
 
-    @Prop({type: String, required: true})
+    @Prop({ type: String, required: true })
     @ApiProperty({
-        example: 'My blog\'s name!',
-        description: 'Name of the blog the current post is related/connected to'
+        example: "My blog's name!",
+        description:
+            'Name of the blog the current post is related/connected to',
     })
-    blogName: string;
+    blogName!: string;
 
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt!: Date;
+    updatedAt!: Date;
 
-    @Prop({type: Date, nullable: true})
-    deletedAt: Date | null;
+    @Prop({ type: Date, nullable: true })
+    deletedAt!: Date | null;
 
-    @Prop({type: ExtendedPostModelSchema})
-    extendedLikesInfo: ExtendedPostModel;
+    @Prop({ type: ExtendedPostModelSchema })
+    extendedLikesInfo!: ExtendedPostModel;
 
     get id(): string {
         // @ts-ignore
@@ -83,7 +88,7 @@ export class Post {
     }
 
     static createInstance(dto: CreatePostDomainDto): PostDocument {
-        const {title, shortDescription, content, blogId, blogName} = dto;
+        const { title, shortDescription, content, blogId, blogName } = dto;
 
         const newPost = new this();
         newPost.shortDescription = shortDescription;
@@ -97,7 +102,7 @@ export class Post {
             likesCount: 0,
             dislikesCount: 0,
             myStatus: LikeStatus.None,
-            newestLikes: []
+            newestLikes: [],
         };
         // newPost.extendedLikesInfo = {
         //     likesCount: 0,

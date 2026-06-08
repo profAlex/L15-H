@@ -4,7 +4,11 @@ import { UserViewDto } from '../../api/view-dto/users.view-dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 // import { FilterQuery } from 'mongoose';
-import mongoose from 'mongoose';
+// import mongoose from 'mongoose';
+// import type { FilterQuery } from 'mongoose'; // Явно указываем, что это тип
+// import mongoose, { Types } from 'mongoose';
+// import { FilterQuery } from 'mongoose/types/inferschematype';
+import { FilterQuery } from 'mongoose/index';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { UserAuthInternalDto } from '../../../authorisation/dto/internal-dto/users.auth-internal-dto';

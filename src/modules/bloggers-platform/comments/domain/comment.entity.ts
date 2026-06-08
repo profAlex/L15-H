@@ -1,9 +1,12 @@
-import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose";
-import {CommentatorInfo, CommentatorInfoSchema} from "./commentator-info.schema";
-import {LikesInfo, LikesInfoSchema} from "./likes-info.schema";
-import {HydratedDocument, Model} from "mongoose";
-import {CreateCommentDomainInputDto} from "./dto/create-comment.domain.input-dto";
-import {LikeStatus} from "../../../../core/enums/like-status.enum";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import {
+    CommentatorInfo,
+    CommentatorInfoSchema,
+} from './commentator-info.schema';
+import { LikesInfo, LikesInfoSchema } from './likes-info.schema';
+import { HydratedDocument, Model } from 'mongoose';
+import { CreateCommentDomainInputDto } from './dto/create-comment.domain.input-dto';
+import { LikeStatus } from '../../../../core/enums/like-status.enum';
 
 // export type CommentStorageModel = {
 //     _id: ObjectId;
@@ -32,26 +35,25 @@ import {LikeStatus} from "../../../../core/enums/like-status.enum";
 //     Dislike = 'Dislike'
 // }
 
-
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class Comment {
-    @Prop({type: String, required: true})
-    relatedPostId: string;
+    @Prop({ type: String, required: true })
+    relatedPostId!: string;
 
-    @Prop({type: String, required: true})
-    content: string;
+    @Prop({ type: String, required: true })
+    content!: string;
 
-    @Prop({type: CommentatorInfoSchema, required: true})
-    commentatorInfo: CommentatorInfo;
+    @Prop({ type: CommentatorInfoSchema, required: true })
+    commentatorInfo!: CommentatorInfo;
 
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt!: Date;
+    updatedAt!: Date;
 
-    @Prop({type: Date, nullable: true})
-    deletedAt: Date | null;
+    @Prop({ type: Date, nullable: true })
+    deletedAt!: Date | null;
 
-    @Prop({type: LikesInfoSchema})
-    likesInfo: LikesInfo;
+    @Prop({ type: LikesInfoSchema })
+    likesInfo!: LikesInfo;
 
     get id(): string {
         // @ts-ignore
@@ -74,7 +76,7 @@ export class Comment {
             likesCount: 0,
             dislikesCount: 0,
             myStatus: LikeStatus.None,
-        }
+        };
 
         return newComment as CommentDocument;
     }
@@ -90,7 +92,6 @@ export class Comment {
     //
     // }
 }
-
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
 

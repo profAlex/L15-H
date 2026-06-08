@@ -1,62 +1,60 @@
-import {Schema, Prop, SchemaFactory} from '@nestjs/mongoose';
-import {HydratedDocument, Model} from 'mongoose';
-import {UpdateUserDto} from '../dto/create-user.dto';
-import {CreateUserDomainDto} from './dto/create-user.domain.dto';
-import {Name, NameSchema} from './name.schema';
+import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument, Model } from 'mongoose';
+import { UpdateUserDto } from '../dto/create-user.dto';
+import { CreateUserDomainDto } from './dto/create-user.domain.dto';
+import { Name, NameSchema } from './name.schema';
 import {
     EmailConfirmationInfo,
-    EmailConfirmationInfoSchema
-} from "../../authorisation/domain/email-confirmation-info.schema";
-import {DomainException} from "../../../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../../../core/exceptions/domain-exception-codes";
+    EmailConfirmationInfoSchema,
+} from '../../authorisation/domain/email-confirmation-info.schema';
+import { DomainException } from '../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
 
 //флаг timestemp автоматичеки добавляет поля upatedAt и createdAt
 /**
  * User Entity Schema
  * This class represents the schema and behavior of a User entity.
  */
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class User {
-
     /**
      * Login of the user (must be uniq)
      * @type {string}
      * @required
      */
-    @Prop({type: String, required: true, unique: true})
-    login: string;
+    @Prop({ type: String, required: true, unique: true })
+    login!: string;
 
     /**
      * Password hash for authentication
      * @type {string}
      * @required
      */
-    @Prop({type: String, required: true, unique: true})
-    passwordHash: string;
+    @Prop({ type: String, required: true, unique: true })
+    passwordHash!: string;
 
     /**
      * Email of the user
      * @type {string}
      * @required
      */
-    @Prop({type: String, min: 5, required: true, unique: true})
-    email: string;
+    @Prop({ type: String, min: 5, required: true, unique: true })
+    email!: string;
 
     /**
      * Email confirmation status (if not confirmed in 2 days account will be deleted)
      * @type {boolean}
      * @default false
      */
-    @Prop({type: Boolean, required: true, default: false})
-    isEmailConfirmed: boolean;
+    @Prop({ type: Boolean, required: true, default: false })
+    isEmailConfirmed!: boolean;
 
-
-    @Prop({type: EmailConfirmationInfoSchema, required: true})
-    emailConfirmationInfo: EmailConfirmationInfo;
+    @Prop({ type: EmailConfirmationInfoSchema, required: true })
+    emailConfirmationInfo!: EmailConfirmationInfo;
 
     // @Prop(NameSchema) this variant from doc doesn't make validation for inner object
-    @Prop({type: NameSchema})
-    name: Name;
+    @Prop({ type: NameSchema })
+    name!: Name;
 
     /**
      * Creation timestamp
@@ -64,21 +62,27 @@ export class User {
      * properties without @Prop for typescript so that they are in the class instance (or in instance methods)
      * @type {Date}
      */
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt!: Date;
+    updatedAt!: Date;
 
     /**
      * Deletion timestamp, nullable, if date exist, means entity soft deleted
      * @type {Date | null}
      */
-    @Prop({type: Date, default: null})
-    deletedAt: Date | null;
+    @Prop({ type: Date, default: null })
+    deletedAt!: Date | null;
 
-    @Prop({ type: String, required: false, default: null, unique: true, sparse: true,})
-    recoveryCode: string | null;
+    @Prop({
+        type: String,
+        required: false,
+        default: null,
+        unique: true,
+        sparse: true,
+    })
+    recoveryCode!: string | null;
 
     @Prop({ type: Date, required: false, default: null })
-    recoveryCodeExpirationDate: Date | null;
+    recoveryCodeExpirationDate!: Date | null;
     /**
      * Virtual property to get the stringified ObjectId
      * @returns {string} The string representation of the ID
@@ -145,7 +149,7 @@ export class User {
     }
 
     confirmEmail() {
-        if(this.isEmailConfirmed){
+        if (this.isEmailConfirmed) {
             // throw new BadRequestException('Email is already confirmed!');
             throw new DomainException({
                 code: DomainExceptionCode.BadRequest,
@@ -159,14 +163,13 @@ export class User {
         this.emailConfirmationInfo.confirmationCode = null;
 
         // console.log("<----------------TEST HERE 4");
-
     }
 
     generateRecoveryCode(recoveryCode: string) {
         if (this.isEmailConfirmed) {
             this.recoveryCode = recoveryCode;
             this.recoveryCodeExpirationDate = new Date(
-                new Date().setMinutes(new Date().getMinutes() + 30)
+                new Date().setMinutes(new Date().getMinutes() + 30),
             );
         }
     }
@@ -181,7 +184,7 @@ export class User {
         if (!this.isEmailConfirmed) {
             this.emailConfirmationInfo.confirmationCode = newConfirmationCode;
             this.emailConfirmationInfo.expirationDate = new Date(
-                new Date().setMinutes(new Date().getMinutes() + 30)
+                new Date().setMinutes(new Date().getMinutes() + 30),
             );
         }
     }

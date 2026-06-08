@@ -1,26 +1,28 @@
-import {PaginatedViewDto} from "../../../../../core/dto/base.paginated.view-dto";
-import {BlogViewDto} from "../../api/view-dto/blogs.view-dto";
-import {Blog, BlogDocument, BlogModelType} from "../../domain/blog.entity";
-import {FilterQuery, ObjectId} from "mongoose";
-import {GetBlogsQueryParams} from "../../api/input-dto/get-blogs-query-params.input-dto";
-import {Injectable, NotFoundException} from "@nestjs/common";
-import {InjectModel} from "@nestjs/mongoose";
-import {SortDirection} from "../../../../../core/dto/base.query-params.input-dto";
-import {DomainException} from "../../../../../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../../../../../core/exceptions/domain-exception-codes";
+import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
+import { BlogViewDto } from '../../api/view-dto/blogs.view-dto';
+import { Blog, BlogDocument, BlogModelType } from '../../domain/blog.entity';
+// import {FilterQuery, ObjectId} from "mongoose";
+import { type FilterQuery } from 'mongoose';
+import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
+import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 @Injectable()
 export class BlogsQueryRepository {
-    constructor(
-        @InjectModel(Blog.name) private BlogModel: BlogModelType,
-    ) {
-    }
+    constructor(@InjectModel(Blog.name) private BlogModel: BlogModelType) {}
 
     async getBlogName(sentBlogId: string) {
-        return this.BlogModel.findOne({_id: sentBlogId, deletedAt: null}).select('name').lean();
+        return this.BlogModel.findOne({ _id: sentBlogId, deletedAt: null })
+            .select('name')
+            .lean();
     }
 
-    async getAllBlogs(query: GetBlogsQueryParams): Promise<PaginatedViewDto<BlogViewDto>> {
+    async getAllBlogs(
+        query: GetBlogsQueryParams,
+    ): Promise<PaginatedViewDto<BlogViewDto>> {
         const filter: FilterQuery<Blog> = {
             deletedAt: null,
         };
@@ -56,13 +58,16 @@ export class BlogsQueryRepository {
         // и база не будет нагружена бесполезным поиском по пустому регулярному выражению.
         if (query.searchNameTerm) {
             filter.$or = filter.$or || [];
-            filter.$or.push(
-                {name: {$regex: query.searchNameTerm, $options: 'i'}}
-            )
+            filter.$or.push({
+                name: { $regex: query.searchNameTerm, $options: 'i' },
+            });
         }
 
         const blogs = await this.BlogModel.find(filter)
-            .sort({[query.sortBy]: query.sortDirection === SortDirection.Asc ? 1 : -1})
+            .sort({
+                [query.sortBy]:
+                    query.sortDirection === SortDirection.Asc ? 1 : -1,
+            })
             .skip(query.calculateSkip())
             .limit(query.pageSize);
 
@@ -74,17 +79,14 @@ export class BlogsQueryRepository {
             items: items,
             page: query.pageNumber,
             size: query.pageSize,
-            totalCount: totalCount
-        })
+            totalCount: totalCount,
+        });
     }
 
     async getBlogByIdOrNotFoundFail(blogId: string): Promise<BlogViewDto> {
         const blog = await this.BlogModel.findOne({
             _id: blogId,
-            $or: [
-                {deletedAt: null},
-                {deletedAt: {$exists: false}}
-            ]
+            $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }],
         }).lean();
 
         if (!blog) {
@@ -98,10 +100,11 @@ export class BlogsQueryRepository {
     }
 
     async ifBlogExists(blogId: string): Promise<boolean> {
-        const count = await this.BlogModel.countDocuments({_id: blogId, deletedAt: null});
+        const count = await this.BlogModel.countDocuments({
+            _id: blogId,
+            deletedAt: null,
+        });
 
         return count > 0;
     }
-
-
 }
