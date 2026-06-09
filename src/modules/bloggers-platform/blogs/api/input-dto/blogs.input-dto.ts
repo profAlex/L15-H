@@ -1,19 +1,19 @@
-import {ApiProperty} from "@nestjs/swagger";
-import {IsNotEmpty, IsString} from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateBlogInputDto {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name: string = '';
 
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
-    description: string;
+    description: string = '';
 
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
-    websiteUrl: string;
+    websiteUrl: string = '';
 }

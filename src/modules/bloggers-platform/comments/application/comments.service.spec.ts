@@ -1,15 +1,20 @@
-import {CommentsService} from "./comments.service";
-import {PostsQueryRepository} from "../../posts/infrastructure/query/posts.query-repository";
-import {CommentsQueryRepository} from "../infrastructure/query/comments.query-repository";
-import {Test, TestingModule} from "@nestjs/testing";
-import {GetCommentsQueryParams} from "../api/input-dto/get-comments-query-params.input-dto";
-import {CommentsSortBy} from "../api/input-dto/comments-sort-by";
-import {PaginatedViewDto} from "../../../../core/dto/base.paginated.view-dto";
-import {CommentViewDto} from "../api/view-dto/comments.view-dto";
-import {NotFoundException} from "@nestjs/common";
+import { CommentsService } from './comments.service';
+import { PostsQueryRepository } from '../../posts/infrastructure/query/posts.query-repository';
+import { CommentsQueryRepository } from '../infrastructure/query/comments.query-repository';
+import { Test, TestingModule } from '@nestjs/testing';
+import { GetCommentsQueryParams } from '../api/input-dto/get-comments-query-params.input-dto';
+import { CommentsSortBy } from '../api/input-dto/comments-sort-by';
+import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
+import { CommentViewDto } from '../api/view-dto/comments.view-dto';
+import { NotFoundException } from '@nestjs/common';
+import {
+    GetCommentsForSpecificPostId,
+    GetCommentsForSpecificPostIdHandler,
+} from '../../posts/application/usecases/get-comments-for-specified-post-id.usecase';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 
-describe('CommentsService', () => {
-    let service: CommentsService;
+describe('GetCommentsForSpecificPostIdHandler', () => {
+    let handler: GetCommentsForSpecificPostIdHandler;
 
     const mockPostsQueryRepository = {
         ifPostExists: jest.fn(),
@@ -22,24 +27,27 @@ describe('CommentsService', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
-                CommentsService,
+                // Тестируем теперь непосредственно сам обработчик CQRS
+                GetCommentsForSpecificPostIdHandler,
                 {
                     provide: PostsQueryRepository,
                     useValue: mockPostsQueryRepository,
                 },
                 {
                     provide: CommentsQueryRepository,
-                    useValue: mockCommentsQueryRepository
+                    useValue: mockCommentsQueryRepository,
                 },
-            ]
+            ],
         }).compile();
 
-        service = module.get<CommentsService>(CommentsService);
+        handler = module.get<GetCommentsForSpecificPostIdHandler>(
+            GetCommentsForSpecificPostIdHandler,
+        );
 
         jest.clearAllMocks();
     });
 
-    it('getCommentsByPostId should find all comments relate4d to the post and return them in paginated format', async () => {
+    it('should find all comments related to the post and return them in paginated format', async () => {
         const fakePostId = 'somePostId';
         const fakeUserId = 'someUserId';
         const fakeQuery: GetCommentsQueryParams = new GetCommentsQueryParams();
@@ -51,52 +59,58 @@ describe('CommentsService', () => {
             pagesCount: 1,
             page: 1,
             pageSize: 10,
-            items: []
+            items: [],
         };
 
         mockPostsQueryRepository.ifPostExists.mockResolvedValue(true);
-        mockCommentsQueryRepository.getCommentsByPostId.mockResolvedValue(expectedResult);
+        mockCommentsQueryRepository.getCommentsByPostId.mockResolvedValue(
+            expectedResult,
+        );
 
-        const result = await service.getCommentsByPostId({
-            userId: fakeUserId,
-            postId: fakePostId,
-            query: fakeQuery
-        });
+        // В CQRS мы создаем инстанс Query/Command класса
+        // Используй синтаксис (с объектом или через запятую) в зависимости от того, какой конструктор ты выбрал ранее
+        const queryInstance = new GetCommentsForSpecificPostId(
+            fakePostId,
+            fakeQuery,
+            fakeUserId,
+        );
 
-        expect(mockPostsQueryRepository.ifPostExists).toHaveBeenCalledWith(fakePostId);
+        // Вызываем напрямую метод execute у хэндлера
+        const result = await handler.execute(queryInstance);
 
+        expect(mockPostsQueryRepository.ifPostExists).toHaveBeenCalledWith(
+            fakePostId,
+        );
         expect(result).toEqual(expectedResult);
         expect(result).toHaveProperty('items');
         expect(result).toHaveProperty('totalCount');
     });
 
-
-    it('getCommentsByPostId should fail due to absent postId', async () => {
+    it('should fail due to absent postId', async () => {
         const fakePostId = 'somePostId';
         const fakeUserId = 'someUserId';
         const fakeQuery: GetCommentsQueryParams = new GetCommentsQueryParams();
         fakeQuery.pageSize = 10;
         fakeQuery.pageNumber = 1;
 
-        const expectedResult = {
-            totalCount: 1,
-            pagesCount: 1,
-            page: 1,
-            pageSize: 10,
-            items: []
-        };
-
         mockPostsQueryRepository.ifPostExists.mockResolvedValue(false);
-        mockCommentsQueryRepository.getCommentsByPostId.mockResolvedValue(expectedResult);
 
-        await expect(service.getCommentsByPostId({
-            userId: fakeUserId,
-            postId: fakePostId,
-            query: fakeQuery
-        })).rejects.toThrow(NotFoundException);
+        const queryInstance = new GetCommentsForSpecificPostId(
+            fakePostId,
+            fakeQuery,
+            fakeUserId,
+        );
 
-        expect(mockPostsQueryRepository.ifPostExists).toHaveBeenCalledWith(fakePostId);
-        expect(mockCommentsQueryRepository.getCommentsByPostId).not.toHaveBeenCalled();
+        // В хэндлере у тебя выбрасывается DomainException, поэтому проверяем именно его!
+        await expect(handler.execute(queryInstance)).rejects.toThrow(
+            DomainException,
+        );
+
+        expect(mockPostsQueryRepository.ifPostExists).toHaveBeenCalledWith(
+            fakePostId,
+        );
+        expect(
+            mockCommentsQueryRepository.getCommentsByPostId,
+        ).not.toHaveBeenCalled();
     });
-
 });

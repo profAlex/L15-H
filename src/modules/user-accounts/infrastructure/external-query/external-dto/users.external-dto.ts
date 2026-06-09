@@ -1,23 +1,29 @@
-import { UserDocument } from '../../../domain/user.entity';
+import { User, UserDocument } from '../../../domain/user.entity';
+import { Types } from 'mongoose';
 
 export class UserExternalDto {
-  id: string;
-  login: string;
-  email: string;
-  createdAt: Date;
-  firstName: string;
-  lastName: string | null;
+    id: string;
+    login: string;
+    email: string;
+    createdAt: Date;
+    firstName: string;
+    lastName: string | null;
 
-  static mapToView(user: UserDocument): UserExternalDto {
-    const dto = new UserExternalDto();
+    constructor(user: User & { _id: Types.ObjectId }) {
+        this.id = user.id || user._id.toString();
+        this.login = user.login;
+        this.email = user.email;
 
-    dto.email = user.email;
-    dto.login = user.login;
-    dto.id = user._id.toString();
-    dto.createdAt = user.createdAt;
-    dto.firstName = user.name.firstName;
-    dto.lastName = user.name.lastName;
+        this.createdAt =
+            user.createdAt instanceof Date
+                ? user.createdAt
+                : new Date(user.createdAt);
 
-    return dto;
-  }
+        this.firstName = user.name?.firstName ?? '';
+        this.lastName = user.name?.lastName ?? null;
+    }
+
+    static mapToView(user: User & { _id: Types.ObjectId }): UserExternalDto {
+        return new UserExternalDto(user);
+    }
 }
