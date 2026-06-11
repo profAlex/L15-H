@@ -1,28 +1,18 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
+    "module": "CommonJS",
     "target": "ES2021",
-    "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
+    "rootDir": "./src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,         // Помогает с импортами вроде bcrypt
+    "skipLibCheck": true,            // Игнорирует ошибки в node_modules
+    "incremental": false,
     "strictNullChecks": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "esModuleInterop": true,
-    "noFallthroughCasesInSwitch": false,
-    "types": ["node", "jest"],
-
+    "noImplicitAny": true
   },
-  "include": [
-    "src/**/*",
-    "test/**/*" // <-- Если твои e2e тесты лежат в отдельной папке test
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

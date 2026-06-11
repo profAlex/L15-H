@@ -1,9 +1,18 @@
-import {AuthGuard} from "@nestjs/passport";
-import {ExecutionContext, Injectable, UnauthorizedException} from "@nestjs/common";
+import { AuthGuard } from '@nestjs/passport';
+import {
+    ExecutionContext,
+    Injectable,
+    UnauthorizedException,
+} from '@nestjs/common';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-    handleRequest(err, userData, info) {
+    handleRequest<TUser = any>(
+        err: any,
+        userData: TUser,
+        info: any,
+        context: ExecutionContext,
+    ) {
         // if (err || !userData) {
         //     throw new UnauthorizedException({
         //         message: 'Wrong or expired jwt-token',
@@ -19,7 +28,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         }
     }
 }
-
 
 @Injectable()
 export class JwtOptionalAuthGuard extends AuthGuard('jwt') {

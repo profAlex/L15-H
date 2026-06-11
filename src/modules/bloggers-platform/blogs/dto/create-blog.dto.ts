@@ -1,24 +1,21 @@
-import {IsNotEmpty, IsString} from "class-validator";
+import { IsNotEmpty, IsString } from 'class-validator';
 
-export class CreateBlogDto {
-
+export type CreateBlogDto = {
     name: string;
-
     description: string;
-
     websiteUrl: string;
-}
+};
 
 export class UpdateBlogInputDto {
     @IsString()
     @IsNotEmpty()
-    name: string;
+    name: string = '';
 
     @IsString()
     @IsNotEmpty()
-    description: string;
+    description: string = '';
 
     @IsString()
     @IsNotEmpty()
-    websiteUrl: string;
+    websiteUrl: string = '';
 }

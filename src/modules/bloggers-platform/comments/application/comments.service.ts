@@ -46,15 +46,15 @@ export class CommentsService {
     //     });
     // }
 
-    async createNewComment(dto: CreateCommentApiInputDto): Promise<string> {
-        const comment = this.CommentModel.createInstance({
-            relatedPostId: dto.relatedPostId,
-            content: dto.content,
-            commentatorInfo: dto.commentatorInfo,
-        });
-
-        await this.commentsCommandRepository.save(comment);
-
-        return comment.id;
-    }
+    // async createNewComment(dto: CreateCommentApiInputDto): Promise<string> {
+    //     const comment = this.CommentModel.createInstance({
+    //         relatedPostId: dto.relatedPostId,
+    //         content: dto.content,
+    //         commentatorInfo: dto.commentatorInfo,
+    //     });
+    //
+    //     await this.commentsCommandRepository.save(comment);
+    //
+    //     return comment.id;
+    // }
 }

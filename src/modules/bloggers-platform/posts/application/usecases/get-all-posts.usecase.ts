@@ -1,0 +1,26 @@
+import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
+import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
+import { CommentViewDto } from '../../../comments/api/view-dto/comments.view-dto';
+import { GetCommentsQueryParams } from '../../../comments/api/input-dto/get-comments-query-params.input-dto';
+import { PostViewDto } from '../../api/view-dto/posts.view-dto';
+import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.input-dto';
+import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
+
+export class GetAllPosts extends Query<
+    PaginatedViewDto<PostViewDto> // This type represents the command execution result
+> {
+    constructor(public readonly query: GetPostsQueryParams) {
+        super();
+    }
+}
+
+@QueryHandler(GetAllPosts)
+export class GetAllPostsHandler implements IQueryHandler<GetAllPosts> {
+    constructor(private readonly postsQueryRepository: PostsQueryRepository) {}
+
+    async execute({
+        query,
+    }: GetAllPosts): Promise<PaginatedViewDto<PostViewDto>> {
+        return this.postsQueryRepository.getAllPosts({ query });
+    }
+}

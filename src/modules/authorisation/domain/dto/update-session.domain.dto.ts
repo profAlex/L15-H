@@ -1,13 +1,34 @@
-import {Type} from "class-transformer";
-import {IsDate} from "class-validator";
+import { Type } from 'class-transformer';
+import { IsDate, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateSessionDomainDto{
-    // убеждаемся, что при получении данных из контроллера (через сеть) даты в UpdateSessionDomainDto действительно превращаются в объекты Date, а не остаются строками
-    @Type(() => Date) // Принудительно превращает строку из JSON в объект Date
+export class UpdateSessionDomainDto {
+    // фронтенд отправляет запрос в формате JSON.
+    // в спецификации JSON не существует типа данных Date. JSON умеет передавать только:
+    //     строки (string)
+    //     числа (number)
+    //     булевы значения (boolean)
+    //     объекты (object) / Массивы (array)
+    //     null
+    // и по сети дата летит как обычная строка (в формате ISO-8601, например, '2026-06-15T15:30:00.000Z'),
+    // декоратор @Type(() => Date) перехватывает эту входящую строку и превращает её в полноценный JS-объект new Date()
+    @ApiProperty({
+        type: String,
+        format: 'date-time', // специальное поле, чтобы Swagger понял, что это ISO-строка даты
+        example: '2026-06-15T15:30:00.000Z',
+    })
+    @Type(() => Date) // принудительно превращает строку из JSON в объект Date
     @IsDate()
-    issuedAt: Date;
+    @IsNotEmpty()
+    issuedAt: Date = new Date(0);
 
-    @Type(() => Date) // Принудительно превращает строку из JSON в объект Date
+    @ApiProperty({
+        type: String,
+        format: 'date-time', // специальное поле, чтобы Swagger понял, что это ISO-строка даты
+        example: '2026-06-15T15:30:00.000Z',
+    })
+    @Type(() => Date) // принудительно превращает строку из JSON в объект Date
     @IsDate()
-    expiresAt: Date;
+    @IsNotEmpty()
+    expiresAt: Date = new Date(0);
 }

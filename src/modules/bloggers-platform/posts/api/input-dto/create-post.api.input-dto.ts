@@ -6,5 +6,5 @@ export class CreatePostApiInputDto extends CreatePostInputDto {
     @ApiProperty({ type: String, required: true })
     @IsString()
     @IsNotEmpty()
-    blogId: string;
+    blogId: string = '';
 }

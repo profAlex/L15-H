@@ -96,7 +96,6 @@ export class BlogsController {
         @Param('blogId') blogId: string,
         @Body() body: CreateBlogPostInputDto,
     ): Promise<PostViewDto> {
-        // await this.blogsQueryRepository.getBlogByIdOrNotFoundFail(blogId);
         return this.postsService.createPostByBlogId({ blogId, body });
     }
 

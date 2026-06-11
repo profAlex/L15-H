@@ -1,14 +1,11 @@
-import {ApiProperty} from "@nestjs/swagger";
-import {CommentatorInfo} from "../commentator-info.schema";
-import {LikesInfo} from "../likes-info.schema";
+import { ApiProperty } from '@nestjs/swagger';
+import { CommentatorInfo } from '../commentator-info.schema';
+import { LikesInfo } from '../likes-info.schema';
 
-export class CreateCommentDomainInputDto{
-    @ApiProperty()
+export type CreateCommentDomainInputDto = {
     relatedPostId: string;
 
-    @ApiProperty()
     content: string;
 
-    @ApiProperty()
     commentatorInfo: CommentatorInfo;
-}
+};

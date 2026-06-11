@@ -1,13 +1,15 @@
-import {INestApplication} from "@nestjs/common";
-import {Test, TestingModule} from "@nestjs/testing";
-import {AppModule} from "../src/app.module";
-import {appSetup} from "../src/setup/app.setup";
-import request from "supertest";
-import {CommentatorInfo} from "../src/modules/bloggers-platform/comments/domain/commentator-info.schema";
-import {LikesInfo} from "../src/modules/bloggers-platform/comments/domain/likes-info.schema";
+import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppModule } from '../src/app.module';
+import { appSetup } from '../src/setup/app.setup';
+import request from 'supertest';
+import { Model } from 'mongoose';
+import { getModelToken } from '@nestjs/mongoose';
+import { Comment } from '../src/modules/bloggers-platform/comments/domain/comment.entity';
 
 describe('PostsController (e2e)', () => {
     let app: INestApplication;
+    let commentModel: Model<any>; // Переменная для прямой работы с БД
 
     beforeAll(async () => {
         const testingAppModule: TestingModule = await Test.createTestingModule({
@@ -17,6 +19,9 @@ describe('PostsController (e2e)', () => {
         app = testingAppModule.createNestApplication();
         appSetup(app); // не забываем подключить глобальные префиксы, пайпы
         await app.init();
+
+        // достаем модель комментариев напрямую из контейнера NestJS
+        commentModel = app.get<Model<any>>(getModelToken(Comment.name));
     });
 
     afterAll(async () => {
@@ -29,9 +34,7 @@ describe('PostsController (e2e)', () => {
         await request(app.getHttpServer()).delete('/testing/all-data');
     });
 
-
     it('GET /posts - should return 201 and paginated post list', async () => {
-
         // создание блога
         const createBlogResponse = await request(app.getHttpServer())
             .post('/blogs')
@@ -113,27 +116,25 @@ describe('PostsController (e2e)', () => {
             items: [
                 {
                     id: expect.any(String),
-                    title: "NestJS Testing",
-                    shortDescription: "How to write e2e tests",
-                    content: "Very long and useful content about supertest...",
+                    title: 'NestJS Testing',
+                    shortDescription: 'How to write e2e tests',
+                    content: 'Very long and useful content about supertest...',
                     blogId: expect.any(String),
-                    blogName: "NodeJS Blog",
+                    blogName: 'NodeJS Blog',
                     createdAt: expect.any(String),
                     extendedLikesInfo: {
                         likesCount: 0,
                         dislikesCount: 0,
-                        myStatus: "None",
-                        newestLikes: []
-                    }
-                }
-            ]
+                        myStatus: 'None',
+                        newestLikes: [],
+                    },
+                },
+            ],
         });
         // console.log(result.body);
-
     });
 
     it('POST /posts - should return 201 and created post', async () => {
-
         // создание блога
         const createBlogResponse = await request(app.getHttpServer())
             .post('/blogs')
@@ -171,7 +172,6 @@ describe('PostsController (e2e)', () => {
             .send(createPostDto)
             .expect(201);
 
-
         // структура ответа с содержанием созданного поста
         // {
         //     "id": "6a09e013dc2fce1338ab466a",
@@ -190,22 +190,94 @@ describe('PostsController (e2e)', () => {
         // }
 
         expect(createPostResponse.body).toEqual({
-
             id: expect.any(String),
-            title: "NestJS Testing",
-            shortDescription: "How to write e2e tests",
-            content: "Very long and useful content about supertest...",
+            title: 'NestJS Testing',
+            shortDescription: 'How to write e2e tests',
+            content: 'Very long and useful content about supertest...',
             blogId: expect.any(String),
-            blogName: "NodeJS Blog",
+            blogName: 'NodeJS Blog',
             createdAt: expect.any(String),
             extendedLikesInfo: {
                 likesCount: 0,
                 dislikesCount: 0,
-                myStatus: "None",
-                newestLikes: []
-            }
-
+                myStatus: 'None',
+                newestLikes: [],
+            },
         });
     });
 
+    it('GET /posts/:postId/comments - should return 200 and paginated comments list', async () => {
+        // 1. Создаем блог через HTTP
+        const createBlogResponse = await request(app.getHttpServer())
+            .post('/blogs')
+            .send({
+                name: 'Mongoose Tips',
+                description: 'Database design tips',
+                websiteUrl: 'https://mongoosejs.com',
+            })
+            .expect(201);
+
+        const blog = createBlogResponse.body;
+
+        // 2. Создаем пост через HTTP
+        const createPostResponse = await request(app.getHttpServer())
+            .post(`/blogs/${blog.id}/posts`)
+            .send({
+                title: 'CQRS Architecture',
+                shortDescription: 'Using NestJS QueryBus',
+                content: 'Let us query comments via QueryBus effectively...',
+            })
+            .expect(201);
+
+        const post = createPostResponse.body;
+
+        // 3. Напрямую пишем комментарий в базу данных через Mongoose Model
+        // Структура объекта должна полностью соответствовать твоей Mongoose-схеме документа
+        await commentModel.create({
+            relatedPostId: post.id,
+            content: 'This query bus approach is incredibly clean!',
+            commentatorInfo: {
+                userId: 'user123',
+                userLogin: 'johndoe',
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(Date.now() + 30 * 1000),
+            likesInfo: {
+                likesCount: 0,
+                dislikesCount: 0,
+                usersStatuses: [],
+            },
+            deletedAt: null,
+        });
+
+        // 4. Вызываем тестируемый эндпоинт, который внутри использует QueryBus
+        const result = await request(app.getHttpServer())
+            .get(`/posts/${post.id}/comments`)
+            .query({ pageNumber: 1, pageSize: 10 })
+            .expect(200);
+
+        // 5. Проверяем, что QueryBus успешно достал из базы наш объект и отмаппил в ViewDto
+        expect(result.body).toEqual({
+            totalCount: 1,
+            pagesCount: 1,
+            page: 1,
+            pageSize: 10,
+            items: [
+                {
+                    id: expect.any(String),
+                    content: 'This query bus approach is incredibly clean!',
+                    commentatorInfo: {
+                        userId: 'user123',
+                        userLogin: 'johndoe',
+                    },
+                    createdAt: expect.any(String),
+                    likesInfo: {
+                        likesCount: 0,
+                        dislikesCount: 0,
+                        myStatus: 'None',
+                    },
+                },
+            ],
+        });
+    });
 });

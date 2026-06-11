@@ -5,13 +5,13 @@ import {
     QueryHandler,
     IQueryHandler,
 } from '@nestjs/cqrs';
-import { GetCommentsQueryParams } from '../../../comments/api/input-dto/get-comments-query-params.input-dto';
+import { GetCommentsQueryParams } from '../../api/input-dto/get-comments-query-params.input-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
-import { CommentViewDto } from '../../../comments/api/view-dto/comments.view-dto';
-import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
+import { CommentViewDto } from '../../api/view-dto/comments.view-dto';
+import { PostsQueryRepository } from '../../../posts/infrastructure/query/posts.query-repository';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
-import { CommentsQueryRepository } from '../../../comments/infrastructure/query/comments.query-repository';
+import { CommentsQueryRepository } from '../../infrastructure/query/comments.query-repository';
 
 export class GetCommentsForSpecificPostId extends Query<
     PaginatedViewDto<CommentViewDto> // This type represents the command execution result
@@ -32,8 +32,8 @@ export class GetCommentsForSpecificPostIdHandler implements IQueryHandler<GetCom
         private readonly commentsQueryRepository: CommentsQueryRepository,
     ) {}
 
-    async execute(busquery: GetCommentsForSpecificPostId) {
-        const { userId, postId, query } = busquery;
+    async execute({ userId, postId, query }: GetCommentsForSpecificPostId) {
+        // const { userId, postId, query } = busQueryDto;
         if (!(await this.postsQueryRepository.ifPostExists(postId))) {
             // throw new NotFoundException("Post not found");
             throw new DomainException({

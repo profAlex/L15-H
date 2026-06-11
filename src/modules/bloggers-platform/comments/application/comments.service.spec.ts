@@ -10,7 +10,7 @@ import { NotFoundException } from '@nestjs/common';
 import {
     GetCommentsForSpecificPostId,
     GetCommentsForSpecificPostIdHandler,
-} from '../../posts/application/usecases/get-comments-for-specified-post-id.usecase';
+} from './usecases/get-comments-for-specified-post-id.usecase';
 import { DomainException } from '../../../../core/exceptions/domain-exceptions';
 
 describe('GetCommentsForSpecificPostIdHandler', () => {

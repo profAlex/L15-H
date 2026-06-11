@@ -1,20 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class CreatePostInputDto {
     @ApiProperty({ type: String, required: true })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(30)
     title: string = ''; // Инициализируем пустой строкой
 
     @ApiProperty({ type: String })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(100)
     shortDescription: string = '';
 
     @ApiProperty({ type: String, required: true })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(1000)
     content: string = '';
 }
 

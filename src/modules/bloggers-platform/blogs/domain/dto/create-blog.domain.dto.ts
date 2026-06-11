@@ -1,12 +1,9 @@
-import {ApiProperty} from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateBlogDomainDto {
-    @ApiProperty()
+export type CreateBlogDomainDto = {
     name: string;
 
-    @ApiProperty()
     description: string;
 
-    @ApiProperty()
     websiteUrl: string;
-}
+};

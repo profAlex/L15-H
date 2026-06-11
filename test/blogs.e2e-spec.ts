@@ -1,8 +1,8 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {INestApplication} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import {AppModule} from '../src/app.module';
-import {appSetup} from '../src/setup/app.setup';
+import { AppModule } from '../src/app.module';
+import { appSetup } from '../src/setup/app.setup';
 
 describe('BlogsController (e2e)', () => {
     let app: INestApplication;
@@ -159,7 +159,7 @@ describe('BlogsController (e2e)', () => {
         const createBlogDto = {
             name: 'Blog for Post',
             description: 'Description',
-            websiteUrl: 'https://test.com'
+            websiteUrl: 'https://test.com',
         };
 
         const blogResponse = await request(app.getHttpServer())
@@ -173,7 +173,7 @@ describe('BlogsController (e2e)', () => {
         const createPostDto = {
             title: 'New Post Title',
             shortDescription: 'Short desc for post',
-            content: 'Content of the post'
+            content: 'Content of the post',
         };
 
         // 3. Отправляем запрос на создание поста
@@ -195,15 +195,15 @@ describe('BlogsController (e2e)', () => {
                 likesCount: 0,
                 dislikesCount: 0,
                 myStatus: 'None',
-                newestLikes: [] // При создании список лайков всегда пуст
-            }
+                newestLikes: [], // При создании список лайков всегда пуст
+            },
         });
 
         // 5. Дополнительно проверяем, что пост реально создался и доступен по GET
         await request(app.getHttpServer())
             .get(`/blogs/${blog.id}/posts`)
             .expect(200)
-            .then(res => {
+            .then((res) => {
                 expect(res.body.items[0].id).toBe(response.body.id);
             });
     });
@@ -214,7 +214,7 @@ describe('BlogsController (e2e)', () => {
         const createPostDto = {
             title: 'Title',
             shortDescription: 'Desc',
-            content: 'Content'
+            content: 'Content',
         };
 
         await request(app.getHttpServer())
@@ -226,9 +226,9 @@ describe('BlogsController (e2e)', () => {
     it('POST /blogs/:blogId/posts -> should create post and return 201 with correct body', async () => {
         // 1. Создаем блог-родитель
         const createBlogDto = {
-            name: 'Post Testing Blog',
+            name: 'Testing Blog',
             description: 'Testing post creation',
-            websiteUrl: 'https://test-post.com'
+            websiteUrl: 'https://test-post.com',
         };
 
         const blogResponse = await request(app.getHttpServer())
@@ -242,7 +242,7 @@ describe('BlogsController (e2e)', () => {
         const createPostDto = {
             title: 'Interesting Post',
             shortDescription: 'Short description of the interesting post',
-            content: 'Very detailed content about NodeJS'
+            content: 'Very detailed content about NodeJS',
         };
 
         // 3. Создаем пост через блог
@@ -264,8 +264,8 @@ describe('BlogsController (e2e)', () => {
                 likesCount: 0,
                 dislikesCount: 0,
                 myStatus: 'None',
-                newestLikes: []
-            }
+                newestLikes: [],
+            },
         });
     });
 
@@ -292,7 +292,7 @@ describe('BlogsController (e2e)', () => {
         const createBlogDto = {
             name: 'Target Blog',
             description: 'Get me by ID',
-            websiteUrl: 'https://find-me.com'
+            websiteUrl: 'https://find-me.com',
         };
 
         const createResponse = await request(app.getHttpServer())
@@ -314,7 +314,7 @@ describe('BlogsController (e2e)', () => {
             description: createBlogDto.description,
             websiteUrl: createBlogDto.websiteUrl,
             createdAt: expect.any(String),
-            isMembership: expect.any(Boolean)
+            isMembership: expect.any(Boolean),
         });
     });
 
@@ -333,7 +333,7 @@ describe('BlogsController (e2e)', () => {
             .send({
                 name: 'Old Name',
                 description: 'Old Description',
-                websiteUrl: 'https://old.com'
+                websiteUrl: 'https://old.com',
             })
             .expect(201);
 
@@ -343,7 +343,7 @@ describe('BlogsController (e2e)', () => {
         const updateDto = {
             name: 'New Name',
             description: 'New Description',
-            websiteUrl: 'https://new.com'
+            websiteUrl: 'https://new.com',
         };
 
         await request(app.getHttpServer())
@@ -364,7 +364,11 @@ describe('BlogsController (e2e)', () => {
     it('PUT /blogs/:id -> should return 404 if blog not found', async () => {
         await request(app.getHttpServer())
             .put('/blogs/6633973977c688d054942944')
-            .send({name: 'Name', description: 'Desc', websiteUrl: 'https://ok.com'})
+            .send({
+                name: 'Name',
+                description: 'Desc',
+                websiteUrl: 'https://ok.com',
+            })
             .expect(404);
     });
 
@@ -375,7 +379,7 @@ describe('BlogsController (e2e)', () => {
             .send({
                 name: 'Delete Me',
                 description: 'To be deleted',
-                websiteUrl: 'https://delete.com'
+                websiteUrl: 'https://delete.com',
             })
             .expect(201);
 
@@ -387,12 +391,10 @@ describe('BlogsController (e2e)', () => {
             .expect(204);
 
         // Временная проверка: подождать 100мс
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // 3. Пытаемся найти его по ID - должны получить 404
-        await request(app.getHttpServer())
-            .get(`/blogs/${blogId}`)
-            .expect(404);
+        await request(app.getHttpServer()).get(`/blogs/${blogId}`).expect(404);
     });
 
     it('DELETE /blogs/:id -> should return 404 if blog does not exist', async () => {
@@ -400,5 +402,4 @@ describe('BlogsController (e2e)', () => {
             .delete('/blogs/6633973977c688d054942944')
             .expect(404);
     });
-
 });

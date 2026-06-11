@@ -12,8 +12,8 @@ export class CreateUserInputDto {
     @IsNotEmpty()
     @IsString()
     @Length(3, 10)
-    @Matches('^[a-zA-Z0-9_-]*$')
-    login: string = ''; // Инициализируем пустой строкой
+    @Matches(/^[a-zA-Z0-9_-]*$/)
+    login: string = '';
 
     @ApiProperty()
     @IsNotEmpty()

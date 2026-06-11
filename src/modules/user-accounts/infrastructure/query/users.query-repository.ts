@@ -8,7 +8,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 // import type { FilterQuery } from 'mongoose'; // Явно указываем, что это тип
 // import mongoose, { Types } from 'mongoose';
 // import { FilterQuery } from 'mongoose/types/inferschematype';
-import { FilterQuery } from 'mongoose/index';
+// import mongoose from 'mongoose';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { GetUsersQueryParams } from '../../api/input-dto/get-users-query-params.input-dto';
 import { UserAuthInternalDto } from '../../../authorisation/dto/internal-dto/users.auth-internal-dto';
@@ -60,22 +60,39 @@ export class UsersQueryRepository {
     async getAll(
         query: GetUsersQueryParams,
     ): Promise<PaginatedViewDto<UserViewDto>> {
-        const filter: FilterQuery<User> = {
+        const filter: Record<string, any> = {
             deletedAt: null,
         };
 
+        const orConditions: any[] = [];
+
+        // дальнейший блог if - это дополнительнве проверки в дополнение к дефолтным, назначаемым в классе GetBlogsQueryParams
+        // 1) Если пользователь не ввел поисковое слово, query.searchNameTerm будет равен null.
+        // В таком случае, если нет проверки if: программа попытается добавить в MongoDB условие
+        // { name: { $regex: null } }. База либо вернет ошибку, либо (что хуже) попытается
+        // найти документы, где имя буквально равно null.
+        // С проверкой if(query.searchNameTerm) код просто не зайдет внутрь if, и массив $or
+        // не создается. Запрос остается чистым.
+
+        // 2) Защита от пустых строк
+        // Иногда пользователи присылают ?searchNameTerm=. В этом случае в DTO может попасть
+        // пустая строка "".
+        // if (query.searchNameTerm) отфильтрует это (так как пустая строка — это falsy),
+        // и база не будет нагружена бесполезным поиском по пустому регулярному выражению.
         if (query.searchLoginTerm) {
-            filter.$or = filter.$or || [];
-            filter.$or.push({
+            orConditions.push({
                 login: { $regex: query.searchLoginTerm, $options: 'i' },
             });
         }
 
         if (query.searchEmailTerm) {
-            filter.$or = filter.$or || [];
-            filter.$or.push({
+            orConditions.push({
                 email: { $regex: query.searchEmailTerm, $options: 'i' },
             });
+        }
+
+        if (orConditions.length > 0) {
+            filter.$or = orConditions;
         }
 
         const users = await this.UserModel.find(filter)

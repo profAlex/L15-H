@@ -22,7 +22,8 @@ import { PostsQueryRepository } from '../infrastructure/query/posts.query-reposi
 import { CreatePostApiInputDto } from './input-dto/create-post.api.input-dto';
 import { UpdatePostInputDto } from '../dto/create-post-input.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { GetCommentsForSpecificPostId } from '../application/usecases/get-comments-for-specified-post-id.usecase';
+import { GetCommentsForSpecificPostId } from '../../comments/application/usecases/get-comments-for-specified-post-id.usecase';
+import { GetAllPosts } from '../application/usecases/get-all-posts.usecase';
 
 @ApiTags('Posts endpoint')
 @Controller('posts')
@@ -38,6 +39,7 @@ export class PostsController {
     }
 
     // Make like/unlike/dislike/undislike operation
+    @ApiParam({ name: 'postId' })
     @Put(':postId/like-status')
     async applyLikeStatus() {}
 
@@ -54,6 +56,7 @@ export class PostsController {
     }
 
     // Create new comment
+    @ApiParam({ name: 'postId' })
     @Post(':postId/comments')
     async createNewComment() {}
 
@@ -62,7 +65,7 @@ export class PostsController {
     async getAllPosts(
         @Query() query: GetPostsQueryParams,
     ): Promise<PaginatedViewDto<PostViewDto>> {
-        return this.postsQueryRepository.getAllPosts({ query });
+        return this.queryBus.execute<GetAllPosts>(new GetAllPosts(query));
     }
 
     // Create new post

@@ -1,27 +1,25 @@
 // import dotenv from "dotenv";
 // dotenv.config();
 
-import "dotenv/config";
-import * as process from "node:process";
+import 'dotenv/config';
+import * as process from 'node:process';
 
 // дефолтные значения параметров
-const DEFAULT_PORT = "3003";
-const DEFAULT_ACCESS_TOKEN_SECRET = "ryuas235GCPHvlt347782uzHBSDuw4hr";
-const DEFAULT_REFRESH_TOKEN_SECRET = "ryuas235GCPHvlt347782uzHBSDuw4hr";
-const DEFAULT_ACCESS_TOKEN_LIFETIME = "600"; // sec
-const DEFAULT_REFRESH_TOKEN_LIFETIME = "1200"; // sec
+const DEFAULT_PORT = '3003';
+const DEFAULT_ACCESS_TOKEN_SECRET = 'ryuas235GCPHvlt347782uzHBSDuw4hr';
+const DEFAULT_REFRESH_TOKEN_SECRET = 'ryuas235GCPHvlt347782uzHBSDuw4hr';
+const DEFAULT_ACCESS_TOKEN_LIFETIME = '600'; // sec
+const DEFAULT_REFRESH_TOKEN_LIFETIME = '1200'; // sec
 
-const DEFAULT_COOKIE_DOMAIN = "localhost";
+const DEFAULT_COOKIE_DOMAIN = 'localhost';
 const DEFAULT_COOKIE_SECURE = true;
 
-const DEFAULT_MAIL_PORT = "465";
-const DEFAULT_MAIL_HOST = "smtp.yandex.ru";
-const DEFAULT_MAIL_LOGIN = "geniusb198";
-const DEFAULT_MAIL_PASS = "zjtrfatkvzoxowdr";
+const DEFAULT_MAIL_PORT = '465';
+const DEFAULT_MAIL_HOST = 'smtp.yandex.ru';
+const DEFAULT_MAIL_LOGIN = 'geniusb198';
+const DEFAULT_MAIL_PASS = 'zjtrfatkvzoxowdr';
 
-const DEFAULT_MONGO_URI = "mongodb+srv://bolly198:bN0Ew0gUNFwqH7VL@newlearningcluster.1tnov1c.mongodb.net/?appName=NewLearningCluster";
-
-
+const DEFAULT_MONGO_URI = '';
 
 // структура конфигурационных значений
 type Config = {
@@ -61,14 +59,14 @@ const getConfig = (): Config => {
     // if (!accessJwtSecret) throw new Error("JWT_SECRET is required in .env");
     if (!accessTokenSecret) {
         console.warn(
-            "ACCESS_TOKEN_SECRET is not defined in .env! Applied default value.",
+            'ACCESS_TOKEN_SECRET is not defined in .env! Applied default value.',
         );
         accessTokenSecret = DEFAULT_ACCESS_TOKEN_SECRET;
     }
 
     if (!refreshTokenSecret) {
         console.warn(
-            "REFRESH_TOKEN_SECRET is not defined in .env! Applied default value.",
+            'REFRESH_TOKEN_SECRET is not defined in .env! Applied default value.',
         );
         refreshTokenSecret = DEFAULT_REFRESH_TOKEN_SECRET;
     }
@@ -87,41 +85,40 @@ const getConfig = (): Config => {
         refreshTokenLifetime = DEFAULT_REFRESH_TOKEN_LIFETIME;
     }
 
-    if(!mailPort) {
+    if (!mailPort) {
         console.warn(
             `MAIL_PORT is not defined in .env! Applied default value: ${DEFAULT_MAIL_PORT}.`,
         );
         mailPort = DEFAULT_MAIL_PORT;
     }
 
-    if(!mailHost) {
+    if (!mailHost) {
         console.warn(
             `MAIL_HOST is not defined in .env! Applied default value: ${DEFAULT_MAIL_HOST}.`,
         );
         mailHost = DEFAULT_MAIL_HOST;
     }
 
-    if(!mailLogin) {
+    if (!mailLogin) {
         console.warn(
             `MAIL_LOGIN is not defined in .env! Applied default value: ${DEFAULT_MAIL_LOGIN}.`,
         );
         mailLogin = DEFAULT_MAIL_LOGIN;
     }
 
-    if(!mailPass) {
+    if (!mailPass) {
         console.warn(
             `MAIL_PASS is not defined in .env! Applied default value: ${DEFAULT_MAIL_PASS}.`,
         );
         mailPass = DEFAULT_MAIL_PASS;
     }
 
-    if(!mongoURI) {
+    if (!mongoURI) {
         console.warn(
             `MONGO_URI is not defined in .env! Applied default value: ${DEFAULT_MONGO_URI}.`,
         );
         mongoURI = DEFAULT_MONGO_URI;
     }
-
 
     return {
         appPort: parseInt(appPort, 10),
@@ -129,7 +126,7 @@ const getConfig = (): Config => {
         refreshTokenSecret: refreshTokenSecret,
         accessTokenLifetime: parseInt(accessTokenLifetime, 10),
         refreshTokenLifetime: parseInt(refreshTokenLifetime, 10),
-        mailPort: parseInt(mailPort,10),
+        mailPort: parseInt(mailPort, 10),
         mailHost: mailHost,
         mailLogin: mailLogin,
         mailPass: mailPass,

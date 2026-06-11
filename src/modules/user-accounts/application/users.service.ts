@@ -1,14 +1,13 @@
-import {Injectable, InternalServerErrorException} from '@nestjs/common';
-import {InjectModel} from '@nestjs/mongoose';
-import {User, UserDocument, UserModelType} from '../domain/user.entity';
-import {CreateUserDto, UpdateUserDto} from '../dto/create-user.dto';
-import bcrypt from 'bcrypt';
-import {UsersRepository} from '../infrastructure/users.repository';
-import {CryptoService} from "../../../core/bcrypt/bcrypt.service";
-import {UUIDGeneratorUtil} from "../../../core/uuid-generation/uuid.service";
-import {UsersQueryRepository} from "../infrastructure/query/users.query-repository";
-import {UserAuthInternalDto} from "../../authorisation/dto/internal-dto/users.auth-internal-dto";
-import {MeViewDto} from "../../authorisation/api/view-dto/me.view-dto";
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument, UserModelType } from '../domain/user.entity';
+import { CreateUserDto, UpdateUserDto } from '../dto/create-user.dto';
+import { UsersRepository } from '../infrastructure/users.repository';
+import { CryptoService } from '../../../core/bcrypt/bcrypt.service';
+import { UUIDGeneratorUtil } from '../../../core/uuid-generation/uuid.service';
+import { UsersQueryRepository } from '../infrastructure/query/users.query-repository';
+import { UserAuthInternalDto } from '../../authorisation/dto/internal-dto/users.auth-internal-dto';
+import { MeViewDto } from '../../authorisation/api/view-dto/me.view-dto';
 
 @Injectable()
 export class UsersService {
@@ -18,11 +17,12 @@ export class UsersService {
         private usersCommandRepository: UsersRepository,
         private usersQueryRepository: UsersQueryRepository,
         private cryptoService: CryptoService,
-    ) {
-    }
+    ) {}
 
     async createUser(dto: CreateUserDto): Promise<string> {
-        const passwordHash = await this.cryptoService.generateHash(dto.password);
+        const passwordHash = await this.cryptoService.generateHash(
+            dto.password,
+        );
         // console.log("<------------TEST HERE2");
 
         if (!passwordHash) {
@@ -34,7 +34,7 @@ export class UsersService {
             login: dto.login,
             email: dto.email,
             passwordHash: passwordHash,
-            confirmationCode: confirmationCode
+            confirmationCode: confirmationCode,
         });
         await this.usersCommandRepository.save(newUser);
 
@@ -69,27 +69,44 @@ export class UsersService {
         return this.usersCommandRepository.findOrNotFoundFail(id);
     }
 
-    async checkIfUserExists(login: string, email: string): Promise<'login' | 'email' | null> {
+    async checkIfUserExists(
+        login: string,
+        email: string,
+    ): Promise<'login' | 'email' | null> {
         return this.usersQueryRepository.checkIfUserExists(login, email);
     }
 
-    async findUserByLogin(loginOrEmail: string): Promise<UserAuthInternalDto | null> {
+    async findUserByLogin(
+        loginOrEmail: string,
+    ): Promise<UserAuthInternalDto | null> {
         return this.usersQueryRepository.findUserByLogin(loginOrEmail);
     }
 
-    async findUserByConfirmationCode(confirmationCode: string): Promise<UserDocument | null> {
-        return this.usersQueryRepository.findUserByConfirmationCode(confirmationCode);
+    async findUserByConfirmationCode(
+        confirmationCode: string,
+    ): Promise<UserDocument | null> {
+        return this.usersQueryRepository.findUserByConfirmationCode(
+            confirmationCode,
+        );
     }
 
-    async findConfirmedUserByEmail(sentEmail: string): Promise<UserDocument | null> {
+    async findConfirmedUserByEmail(
+        sentEmail: string,
+    ): Promise<UserDocument | null> {
         return this.usersQueryRepository.findConfirmedUserByEmail(sentEmail);
     }
 
-    async findUserByRecoveryCode(sentRecoveryCode: string): Promise<UserDocument | null> {
-        return this.usersQueryRepository.findUserByRecoveryCode(sentRecoveryCode);
+    async findUserByRecoveryCode(
+        sentRecoveryCode: string,
+    ): Promise<UserDocument | null> {
+        return this.usersQueryRepository.findUserByRecoveryCode(
+            sentRecoveryCode,
+        );
     }
 
-    async findNotConfirmedByEmail(sentEmail: string): Promise<UserDocument | null> {
+    async findNotConfirmedByEmail(
+        sentEmail: string,
+    ): Promise<UserDocument | null> {
         return this.usersQueryRepository.findNotConfirmedByEmail(sentEmail);
     }
 

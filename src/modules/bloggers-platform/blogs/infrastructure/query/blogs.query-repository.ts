@@ -3,7 +3,6 @@ import { BlogViewDto } from '../../api/view-dto/blogs.view-dto';
 import { Blog, BlogDocument, BlogModelType } from '../../domain/blog.entity';
 // import {FilterQuery, ObjectId} from "mongoose";
 // import { type FilterQuery } from 'mongoose';
-import { FilterQuery } from 'mongoose/index';
 import { GetBlogsQueryParams } from '../../api/input-dto/get-blogs-query-params.input-dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -24,7 +23,7 @@ export class BlogsQueryRepository {
     async getAllBlogs(
         query: GetBlogsQueryParams,
     ): Promise<PaginatedViewDto<BlogViewDto>> {
-        const filter: FilterQuery<Blog> = {
+        const filter: Record<string, any> = {
             deletedAt: null,
         };
 
@@ -57,12 +56,25 @@ export class BlogsQueryRepository {
         // пустая строка "".
         // if (query.searchNameTerm) отфильтрует это (так как пустая строка — это falsy),
         // и база не будет нагружена бесполезным поиском по пустому регулярному выражению.
+
+        const orConditions: any[] = [];
+
         if (query.searchNameTerm) {
-            filter.$or = filter.$or || [];
-            filter.$or.push({
+            orConditions.push({
                 name: { $regex: query.searchNameTerm, $options: 'i' },
             });
         }
+
+        if (orConditions.length > 0) {
+            filter.$or = orConditions;
+        }
+        //
+        // if (query.searchNameTerm) {
+        //     filter.$or = filter.$or || [];
+        //     filter.$or.push({
+        //         name: { $regex: query.searchNameTerm, $options: 'i' },
+        //     });
+        // }
 
         const blogs = await this.BlogModel.find(filter)
             .sort({

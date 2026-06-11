@@ -1,10 +1,15 @@
-import {AuthGuard} from "@nestjs/passport";
-import {UnauthorizedException} from "@nestjs/common";
-import {DomainException} from "../../../../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../../../../core/exceptions/domain-exception-codes";
+import { AuthGuard } from '@nestjs/passport';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 
 export class LocalAuthGuard extends AuthGuard('local') {
-    handleRequest(err, userData, info) {
+    handleRequest<TUser = any>(
+        err: any,
+        userData: TUser,
+        info: any,
+        context: ExecutionContext,
+    ) {
         // Если стратегия выбросила ошибку или юзер не был найден/пароль не подошел
         // console.log("TEST_STOP");
         if (err || !userData) {

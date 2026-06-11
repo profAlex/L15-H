@@ -1,5 +1,6 @@
-import bcrypt from "bcrypt";
-import {Injectable} from "@nestjs/common";
+// import bcrypt from "bcrypt";
+import * as bcrypt from 'bcrypt';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class CryptoService {
@@ -9,7 +10,7 @@ export class CryptoService {
             const hash = await bcrypt.hash(password, salt);
             return hash;
         } catch (error) {
-            console.error("Error while generating hash:", error);
+            console.error('Error while generating hash:', error);
             return null;
         }
     }
@@ -22,8 +23,8 @@ export class CryptoService {
             const result = await bcrypt.compare(password, hash);
             return result;
         } catch (error) {
-            console.error("Error while checking password:", error);
+            console.error('Error while checking password:', error);
             return null;
         }
     }
-};
+}
