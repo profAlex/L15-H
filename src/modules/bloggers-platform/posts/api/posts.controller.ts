@@ -24,6 +24,8 @@ import { UpdatePostInputDto } from '../dto/create-post-input.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { GetCommentsForSpecificPostId } from '../../comments/application/usecases/get-comments-for-specified-post-id.usecase';
 import { GetAllPosts } from '../application/usecases/get-all-posts.usecase';
+import { CreatePost } from '../application/usecases/create-post.usecase';
+import { GetPostById } from '../application/usecases/get-post-by-id.usecase';
 
 @ApiTags('Posts endpoint')
 @Controller('posts')
@@ -73,13 +75,13 @@ export class PostsController {
     async createPost(
         @Body() body: CreatePostApiInputDto,
     ): Promise<PostViewDto> {
-        return this.postsService.createPost(body);
+        return this.commandBus.execute<CreatePost>(new CreatePost(body));
     }
 
     // Return post by id
     @Get(':id')
     async getPostById(@Param('id') id: string): Promise<PostViewDto> {
-        return this.postsQueryRepository.getPostByIdOrNotFoundFail(id);
+        return this.queryBus.execute<GetPostById>(new GetPostById(id));
     }
 
     // Update existing post by id with InputModel
