@@ -100,39 +100,39 @@ export class PostsService {
     //     return PostViewDto.mapToView(post);
     // }
 
-    async updatePostById({
-        postId,
-        updateInputData,
-    }: {
-        postId: string;
-        updateInputData: UpdatePostInputDto;
-    }): Promise<void> {
-        const post =
-            await this.postsCommandRepository.findSinglePostById(postId);
-        if (!post) {
-            // throw new NotFoundException("Post not found");
-            throw new DomainException({
-                code: DomainExceptionCode.PostNotFound,
-                message: 'Post not found',
-            });
-        }
+    // async updatePostById({
+    //     postId,
+    //     updateInputData,
+    // }: {
+    //     postId: string;
+    //     updateInputData: UpdatePostInputDto;
+    // }): Promise<void> {
+    //     const post =
+    //         await this.postsCommandRepository.findSinglePostById(postId);
+    //     if (!post) {
+    //         // throw new NotFoundException("Post not found");
+    //         throw new DomainException({
+    //             code: DomainExceptionCode.PostNotFound,
+    //             message: 'Post not found',
+    //         });
+    //     }
+    //
+    //     post.updatePost(updateInputData);
+    //     await this.postsCommandRepository.save(post);
+    // }
 
-        post.updatePost(updateInputData);
-        await this.postsCommandRepository.save(post);
-    }
-
-    async deletePostById(postId: string): Promise<void> {
-        const post =
-            await this.postsCommandRepository.findSinglePostById(postId);
-        if (!post) {
-            // throw new NotFoundException("Post not found");
-            throw new DomainException({
-                code: DomainExceptionCode.PostNotFound,
-                message: 'Post not found',
-            });
-        }
-
-        post.makeDeleted();
-        await this.postsCommandRepository.save(post);
-    }
+    // async deletePostById(postId: string): Promise<void> {
+    //     const post =
+    //         await this.postsCommandRepository.findSinglePostById(postId);
+    //     if (!post) {
+    //         // throw new NotFoundException("Post not found");
+    //         throw new DomainException({
+    //             code: DomainExceptionCode.PostNotFound,
+    //             message: 'Post not found',
+    //         });
+    //     }
+    //
+    //     post.makeDeleted();
+    //     await this.postsCommandRepository.save(post);
+    // }
 }

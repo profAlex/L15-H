@@ -4,8 +4,6 @@ import { LikesInfo } from '../likes-info.schema';
 
 export type CreateCommentDomainInputDto = {
     relatedPostId: string;
-
     content: string;
-
     commentatorInfo: CommentatorInfo;
 };

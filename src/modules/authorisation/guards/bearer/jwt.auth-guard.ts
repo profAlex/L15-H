@@ -4,6 +4,8 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
+import { DomainException } from '../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../core/exceptions/domain-exception-codes';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -22,7 +24,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         // return userData;
 
         if (err || !userData) {
-            return null;
+            throw new DomainException({
+                code: DomainExceptionCode.Unauthorized,
+                message: 'Wrong or expired jwt-token.',
+            });
+            // return null;
         } else {
             return userData;
         }

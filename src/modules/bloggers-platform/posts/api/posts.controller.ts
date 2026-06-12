@@ -1,4 +1,4 @@
-import { ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import {
     Body,
     Controller,
@@ -10,6 +10,7 @@ import {
     Post,
     Put,
     Query,
+    UseGuards,
 } from '@nestjs/common';
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { CommentViewDto } from '../../comments/api/view-dto/comments.view-dto';
@@ -26,6 +27,14 @@ import { GetCommentsForSpecificPostId } from '../../comments/application/usecase
 import { GetAllPosts } from '../application/usecases/get-all-posts.usecase';
 import { CreatePost } from '../application/usecases/create-post.usecase';
 import { GetPostById } from '../application/usecases/get-post-by-id.usecase';
+import { UpdatePostById } from '../application/usecases/update-post-by-id.usecase';
+import { DeletePostById } from '../application/usecases/delete-post-by-id.usecase';
+import { BasicAuthGuard } from '../../../authorisation/guards/basic/basic.auth-guard';
+import { CreateCommentApiInputDto } from '../../comments/api/input-dto/create-comment.api.input-dto';
+import { JwtAuthGuard } from '../../../authorisation/guards/bearer/jwt.auth-guard';
+import { CreateNewComment } from '../../comments/application/usecases/create-new-comment.usecase';
+import { ExtractUserIfExistsFromRequest } from '../../../authorisation/decorators/extract-user-if-exists.decorator';
+import { UserContextDto } from '../../../authorisation/guards/dto/user-context.dto';
 
 @ApiTags('Posts endpoint')
 @Controller('posts')
@@ -41,11 +50,13 @@ export class PostsController {
     }
 
     // Make like/unlike/dislike/undislike operation
+    @ApiOperation({ summary: 'Make like/unlike/dislike/undislike operation' })
     @ApiParam({ name: 'postId' })
     @Put(':postId/like-status')
     async applyLikeStatus() {}
 
     // Returns comments for specified post
+    @ApiOperation({ summary: 'Returns comments for specified post' })
     @ApiParam({ name: 'postId' }) //для сваггера
     @Get(':postId/comments')
     async getCommentsByPostId(
@@ -58,11 +69,22 @@ export class PostsController {
     }
 
     // Create new comment
+    @ApiOperation({ summary: 'Create new comment' })
     @ApiParam({ name: 'postId' })
+    @UseGuards(JwtAuthGuard)
     @Post(':postId/comments')
-    async createNewComment() {}
+    async createNewComment(
+        @Param('postId') postId: string,
+        @Body() body: CreateCommentApiInputDto,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
+    ): Promise<CommentViewDto> {
+        return this.commandBus.execute<CreateNewComment>(
+            new CreateNewComment(postId, body, user),
+        );
+    }
 
     // Returns all posts
+    @ApiOperation({ summary: 'Returns all posts' })
     @Get()
     async getAllPosts(
         @Query() query: GetPostsQueryParams,
@@ -71,6 +93,8 @@ export class PostsController {
     }
 
     // Create new post
+    @ApiOperation({ summary: 'Create new post' })
+    @UseGuards(BasicAuthGuard)
     @Post()
     async createPost(
         @Body() body: CreatePostApiInputDto,
@@ -79,28 +103,35 @@ export class PostsController {
     }
 
     // Return post by id
+    @ApiOperation({ summary: 'Return post by id' })
+    @ApiParam({ name: 'id' })
     @Get(':id')
     async getPostById(@Param('id') id: string): Promise<PostViewDto> {
         return this.queryBus.execute<GetPostById>(new GetPostById(id));
     }
 
     // Update existing post by id with InputModel
+    @ApiOperation({ summary: 'Update existing post by id with InputModel' })
+    @ApiParam({ name: 'id' })
+    @UseGuards(BasicAuthGuard)
     @Put(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
     async updatePostById(
         @Param('id') id: string,
         @Body() body: UpdatePostInputDto,
     ): Promise<void> {
-        return this.postsService.updatePostById({
-            postId: id,
-            updateInputData: body,
-        });
+        return this.commandBus.execute<UpdatePostById>(
+            new UpdatePostById(id, body),
+        );
     }
 
     // Delete post specified by id
+    @ApiOperation({ summary: 'Delete post specified by id' })
+    @ApiParam({ name: 'id' })
+    @UseGuards(BasicAuthGuard)
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
     async deletePostId(@Param('id') id: string): Promise<void> {
-        return this.postsService.deletePostById(id);
+        return this.commandBus.execute<DeletePostById>(new DeletePostById(id));
     }
 }

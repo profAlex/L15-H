@@ -18,6 +18,12 @@ import { CommentsQueryRepository } from './comments/infrastructure/query/comment
 import { CommentsCommandRepository } from './comments/infrastructure/comments.command-repository';
 import { GetCommentsForSpecificPostIdHandler } from './comments/application/usecases/get-comments-for-specified-post-id.usecase';
 import { GetAllPostsHandler } from './posts/application/usecases/get-all-posts.usecase';
+import { UpdatePostByIdHandler } from './posts/application/usecases/update-post-by-id.usecase';
+import { GetPostByIdHandler } from './posts/application/usecases/get-post-by-id.usecase';
+import { CreatePostHandler } from './posts/application/usecases/create-post.usecase';
+import { DeletePostByIdHandler } from './posts/application/usecases/delete-post-by-id.usecase';
+import { UsersExternalQueryRepository } from '../user-accounts/infrastructure/external-query/users.external-query-repository';
+import { CreateNewCommentHandler } from './comments/application/usecases/create-new-comment.usecase';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -32,6 +38,11 @@ import { GetAllPostsHandler } from './posts/application/usecases/get-all-posts.u
     ],
     controllers: [BlogsController, PostsController, CommentsController],
     providers: [
+        CreateNewCommentHandler,
+        DeletePostByIdHandler,
+        UpdatePostByIdHandler,
+        CreatePostHandler,
+        GetPostByIdHandler,
         GetAllPostsHandler,
         GetCommentsForSpecificPostIdHandler,
         BlogsService,
@@ -43,6 +54,7 @@ import { GetAllPostsHandler } from './posts/application/usecases/get-all-posts.u
         CommentsService,
         CommentsQueryRepository,
         CommentsCommandRepository,
+        UsersExternalQueryRepository,
     ],
 })
 export class BloggersPlatformModule {}

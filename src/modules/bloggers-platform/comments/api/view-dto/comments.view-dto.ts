@@ -1,5 +1,5 @@
 import { LikeStatus } from '../../../../../core/enums/like-status.enum';
-import { CommentDocument } from '../../domain/comment.entity';
+import { Comment } from '../../domain/comment.entity';
 import { FlattenMaps, Types } from 'mongoose';
 
 // export type CommentStorageModel = {
@@ -83,10 +83,8 @@ export class CommentViewDto {
         myStatus: LikeStatus;
     };
 
-    constructor(
-        comment: FlattenMaps<CommentDocument> & { _id: Types.ObjectId },
-    ) {
-        this.id = comment._id.toString();
+    constructor(comment: Comment & { _id: Types.ObjectId }) {
+        this.id = comment.id || comment._id?.toString() || '';
         this.content = comment.content;
 
         // Вложенные объекты инициализируются целиком внутри конструктора
@@ -109,7 +107,7 @@ export class CommentViewDto {
     }
 
     static mapToView(
-        comment: FlattenMaps<CommentDocument> & { _id: Types.ObjectId },
+        comment: Comment & { _id: Types.ObjectId },
     ): CommentViewDto {
         return new CommentViewDto(comment);
     }

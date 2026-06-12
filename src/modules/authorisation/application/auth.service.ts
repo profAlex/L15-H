@@ -1,24 +1,29 @@
-import {Injectable, InternalServerErrorException} from "@nestjs/common";
-import {UserContextDto} from "../guards/dto/user-context.dto";
-import {CryptoService} from "../../../core/bcrypt/bcrypt.service";
-import {JwtService} from "@nestjs/jwt";
-import {EmailService} from "../../notifications/email.service";
-import {UsersService} from "../../user-accounts/application/users.service";
-import {UUIDGeneratorUtil} from "../../../core/uuid-generation/uuid.service";
-import {MeViewDto} from "../api/view-dto/me.view-dto";
-import {DomainException} from "../../../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../../../core/exceptions/domain-exception-codes";
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { UserContextDto } from '../guards/dto/user-context.dto';
+import { CryptoService } from '../../../core/bcrypt/bcrypt.service';
+import { JwtService } from '@nestjs/jwt';
+import { EmailService } from '../../notifications/email.service';
+import { UsersService } from '../../user-accounts/application/users.service';
+import { UUIDGeneratorUtil } from '../../../core/uuid-generation/uuid.service';
+import { MeViewDto } from '../api/view-dto/me.view-dto';
+import { DomainException } from '../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../core/exceptions/domain-exception-codes';
 
 @Injectable()
 export class AuthService {
-    constructor(private usersService: UsersService,
-                private cryptoService: CryptoService,
-                private jwtService: JwtService,
-                private emailService: EmailService) {
+    constructor(
+        private usersService: UsersService,
+        private cryptoService: CryptoService,
+        private jwtService: JwtService,
+        private emailService: EmailService,
+    ) {
         console.log('AuthService created');
     }
 
-    async validateUserCreds(loginOrEmail: string, password: string): Promise<UserContextDto | null> {
+    async validateUserCreds(
+        loginOrEmail: string,
+        password: string,
+    ): Promise<UserContextDto | null> {
         const user = await this.usersService.findUserByLogin(loginOrEmail);
 
         if (!user) {
@@ -27,27 +32,33 @@ export class AuthService {
 
         const isPasswordValid = await this.cryptoService.checkPassword(
             password,
-            user.passwordHash
+            user.passwordHash,
         );
 
         if (!isPasswordValid) {
             return null;
         }
 
-        return {id: user.id};
-    };
-
+        return { id: user.id };
+    }
 
     async loginUser(userId: string): Promise<{ accessToken: string }> {
-        const accessToken = await this.jwtService.signAsync({id: userId} as UserContextDto);
+        const accessToken = await this.jwtService.signAsync({
+            id: userId,
+        } as UserContextDto);
 
-        return {accessToken: accessToken};
-    };
+        return { accessToken: accessToken };
+    }
 
-
-    async registerAttempt(sentLogin: string, sentPassword: string, sentEmail: string): Promise<void> {
-
-        const takenField = await this.usersService.checkIfUserExists(sentLogin, sentEmail);
+    async registerAttempt(
+        sentLogin: string,
+        sentPassword: string,
+        sentEmail: string,
+    ): Promise<void> {
+        const takenField = await this.usersService.checkIfUserExists(
+            sentLogin,
+            sentEmail,
+        );
         // проверяем отдельно занят ли логин а потом емейл, т.к. логика платформенных тестов требует указания field: login при отсутствии логина,
         // поэтмоу разделяем ошибки, но можно попробовать вернуть всегда тут такую ошибку
 
@@ -57,17 +68,19 @@ export class AuthService {
                 code: DomainExceptionCode.UserBadRequest,
                 message: `User with this ${takenField} already exists`,
                 // Динамически подставляем 'login' или 'email' в key
-                extensions: [{
-                    message: `${takenField === 'login' ? 'Login' : 'Email'} is already taken`,
-                    key: takenField
-                }]
+                extensions: [
+                    {
+                        message: `${takenField === 'login' ? 'Login' : 'Email'} is already taken`,
+                        key: takenField,
+                    },
+                ],
             });
         }
 
         const newUserId = await this.usersService.createUser({
             login: sentLogin,
             email: sentEmail,
-            password: sentPassword
+            password: sentPassword,
         });
 
         const user = await this.usersService.findOrNotFoundFail(newUserId);
@@ -87,22 +100,34 @@ export class AuthService {
         // await this.usersCommandRepository.save(newUser);
 
         if (!user.emailConfirmationInfo.confirmationCode) {
-            throw new InternalServerErrorException("Email confirmation code was not generated!");
+            throw new InternalServerErrorException(
+                'Email confirmation code was not generated!',
+            );
         }
 
-        await this.emailService.sendConfirmationEmail(sentEmail, user.emailConfirmationInfo.confirmationCode);
-    };
-
+        await this.emailService.sendConfirmationEmail(
+            sentEmail,
+            user.emailConfirmationInfo.confirmationCode,
+        );
+    }
 
     async confirmRegistration(sentCode: string): Promise<void> {
-        const userToBeConfirmed = await this.usersService.findUserByConfirmationCode(sentCode);
+        const userToBeConfirmed =
+            await this.usersService.findUserByConfirmationCode(sentCode);
 
         if (!userToBeConfirmed) {
             // throw new BadRequestException("Email confirmation code is wrong, outdated or not found.");
             throw new DomainException({
                 code: DomainExceptionCode.ConfirmationCodeExpired,
-                message: 'Email confirmation code is wrong, outdated or not found.',
-                extensions: [{message: "Email confirmation code is wrong, outdated or not found.", key: "code"}]
+                message:
+                    'Email confirmation code is wrong, outdated or not found.',
+                extensions: [
+                    {
+                        message:
+                            'Email confirmation code is wrong, outdated or not found.',
+                        key: 'code',
+                    },
+                ],
             });
         }
         // console.log("<----------------TEST HERE 1", sentCode);
@@ -110,11 +135,11 @@ export class AuthService {
         // console.log("<----------------TEST HERE 2");
 
         await this.usersService.saveUser(userToBeConfirmed);
-    };
-
+    }
 
     async passwordRecoveryByEmail(sentEmail: string): Promise<void> {
-        const user = await this.usersService.findConfirmedUserByEmail(sentEmail);
+        const user =
+            await this.usersService.findConfirmedUserByEmail(sentEmail);
         if (!user) {
             // Returning "success". Even if current email is not registered (for prevent user's email detection)
             return;
@@ -126,11 +151,14 @@ export class AuthService {
         await this.usersService.saveUser(user);
 
         await this.emailService.sendRecoveryEmail(sentEmail, recoveryCode);
-    };
+    }
 
-
-    async applyNewPassword(sentNewPassword: string, sentRecoveryCode: string): Promise<void> {
-        const user = await this.usersService.findUserByRecoveryCode(sentRecoveryCode)
+    async applyNewPassword(
+        sentNewPassword: string,
+        sentRecoveryCode: string,
+    ): Promise<void> {
+        const user =
+            await this.usersService.findUserByRecoveryCode(sentRecoveryCode);
         if (!user) {
             // throw new BadRequestException("Recovery code is wrong or expired.");
             throw new DomainException({
@@ -139,17 +167,18 @@ export class AuthService {
             });
         }
 
-        const newPasswordHash = await this.cryptoService.generateHash(sentNewPassword);
+        const newPasswordHash =
+            await this.cryptoService.generateHash(sentNewPassword);
         if (!newPasswordHash) {
-            throw new InternalServerErrorException("Password hash wasn't generated!");
+            throw new InternalServerErrorException(
+                "Password hash wasn't generated!",
+            );
         }
 
         user.updatePasswordHash(newPasswordHash);
 
         await this.usersService.saveUser(user);
-
-    };
-
+    }
 
     async resendRegistrationEmail(sentEmail: string): Promise<void> {
         const user = await this.usersService.findNotConfirmedByEmail(sentEmail);
@@ -158,7 +187,9 @@ export class AuthService {
             throw new DomainException({
                 code: DomainExceptionCode.BadRequest,
                 message: 'Email already confirmed',
-                extensions: [{message: "Email already confirmed", key: "email"}]
+                extensions: [
+                    { message: 'Email already confirmed', key: 'email' },
+                ],
             });
         }
 
@@ -167,9 +198,11 @@ export class AuthService {
 
         await this.usersService.saveUser(user);
 
-        await this.emailService.sendConfirmationEmail(sentEmail, confirmationCode);
-    };
-
+        await this.emailService.sendConfirmationEmail(
+            sentEmail,
+            confirmationCode,
+        );
+    }
 
     async getMeInfo(sentId: string): Promise<MeViewDto> {
         return this.usersService.getMeByIdOrNotFoundFail(sentId);

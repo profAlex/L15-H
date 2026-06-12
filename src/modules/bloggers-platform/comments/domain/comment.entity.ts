@@ -60,10 +60,8 @@ export class Comment {
         return this._id.toString();
     }
 
-    //TODO: тут надо будет доделывать метод в будущих спринтах
-
     static createInstance(dto: CreateCommentDomainInputDto): CommentDocument {
-        const newComment = new this();
+        const newComment = new this(); // new this() можно переписать чтобы использовать саму модель Mongoose: this: Model<CommentDocument>,
         newComment.relatedPostId = dto.relatedPostId;
         newComment.content = dto.content;
         newComment.commentatorInfo = {
