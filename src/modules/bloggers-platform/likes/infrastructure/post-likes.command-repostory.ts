@@ -16,13 +16,16 @@ export class PostLikesCommandRepository {
         await postLike.save();
     }
 
-    async findSinglePostLikeByPostIdAndUserId(
-        sentPostId: string,
-        sentUserId: string,
-    ): Promise<PostLikeDocument | null> {
+    async findSinglePostLikeByPostIdAndUserId({
+        postId,
+        userId,
+    }: {
+        postId: string;
+        userId: string;
+    }): Promise<PostLikeDocument | null> {
         return this.PostLikeModel.findOne({
-            postId: sentPostId,
-            userId: sentUserId,
+            postId,
+            userId,
         });
     }
 }

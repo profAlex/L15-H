@@ -14,6 +14,9 @@ import {
 import { PostLikesCommandRepository } from '../../../likes/infrastructure/post-likes.command-repostory';
 import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
+import { PostLikesQueryRepository } from '../../../likes/infrastructure/query/post-likes.query-repository';
+import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
 
 export class ChangePostLikeStatus extends Command<void> {
     constructor(public readonly dto: CreatePostLikeDto) {
@@ -26,8 +29,10 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
     constructor(
         @InjectModel(PostLike.name) private PostLikeModel: PostLikeModelType,
         private postLikesCommandRepository: PostLikesCommandRepository,
-        // private readonly postsCommandRepository: PostsCommandRepository,
-        private readonly postsQueryRepository: PostsQueryRepository,
+        private postLikesQueryRepository: PostLikesQueryRepository,
+        private postsCommandRepository: PostsCommandRepository,
+        private postsQueryRepository: PostsQueryRepository,
+        private usersExternalQueryRepository: UsersExternalQueryRepository,
     ) {
         // private readonly blogsQueryRepository: BlogsQueryRepository,
     }
@@ -35,7 +40,9 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
     async execute({ dto }: ChangePostLikeStatus): Promise<void> {
         const { postId, userId, likeStatus } = dto;
 
-        const post = await this.postsQueryRepository.ifPostExists(postId);
+        // проверяем что пост, которому пользователь меняет лайк-статус существует и сразу возращаем ссылку для работы
+        const post =
+            await this.postsCommandRepository.findSinglePostById(postId);
         if (!post) {
             // throw new NotFoundException("Post not found");
             throw new DomainException({
@@ -44,78 +51,41 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
             });
         }
 
-        // проверяем наличие реакции на пост в коллекции пост-лайков
-        const previousReactionResult =
-            await this.postsLikesCommandRepository.checkIfUserAlreadyReacted(
-                sentUserId,
-                sentPostId,
+        // проверяем наличие реакции на пост в коллекции пост-лайков и если он существует сразу возвращаем документ для
+        const previousReactionStatus =
+            await this.postLikesCommandRepository.findSinglePostLikeByPostIdAndUserId(
+                { postId, userId },
             );
 
-        // находим юзера, нам нужен будет от него userLogin
-        const user = await this.usersCommandRepository.findUserByPrimaryKey(
-            new ObjectId(sentUserId),
-        );
-        if (!user) {
-            return {
-                data: null,
-                statusCode: HttpStatus.InternalServerError,
-                statusDescription: `Cannot find user with ID ${sentUserId} inside PostsCommandService.likePostById.`,
-                errorsMessages: [
-                    {
-                        field: 'if (!user) inside PostsCommandService.likePostById.',
-                        message: `Internal Server Error`,
-                    },
-                ],
-            };
-        }
+        // находим данные юзера, который меняет реакицю, нам нужен будет от него userLogin
+        const user =
+            await this.usersExternalQueryRepository.getByIdOrNotFoundFail(
+                userId,
+            );
 
         // если прежней реакции не найдено и новая реакция не None
-        if (previousReactionResult === null && sentLike !== 'None') {
-            const newLikeDocument: PostLikeDocument =
-                PostLikeModel.createNewPostLike(
-                    sentPostId,
-                    sentUserId,
-                    user.login,
-                    sentLike,
-                );
+        if (previousReactionStatus === null && likeStatus !== 'None') {
+            // создаем новый лайк в базе
+            const newLikeDocument = this.PostLikeModel.createInstance({
+                postId: postId,
+                userId: userId,
+                userLogin: user.login,
+            });
 
-            const ifSavingLikeSuccessful =
-                await this.postsLikesCommandRepository.savePostLikeDocument(
-                    newLikeDocument,
-                );
-
-            if (!ifSavingLikeSuccessful) {
-                return {
-                    data: null,
-                    statusCode: HttpStatus.InternalServerError,
-                    statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                    errorsMessages: [
-                        {
-                            field: 'if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById.',
-                            message: `Internal Server Error`,
-                        },
-                    ],
-                };
-            }
+            await this.postLikesCommandRepository.save(newLikeDocument);
 
             // добавляем реакцию в счетчик реакций в базе комментариев
-            const ifAddReactionSuccessfull = await post.addPostReaction(
-                sentPostId,
-                sentLike,
-            );
+            const ifAddReactionSuccessfull =
+                await this.postsCommandRepository.addPostReaction({
+                    sentPostId: postId,
+                    newStatus: likeStatus,
+                });
 
             if (!ifAddReactionSuccessfull) {
-                return {
-                    data: null,
-                    statusCode: HttpStatus.InternalServerError,
-                    statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                    errorsMessages: [
-                        {
-                            field: 'if(!ifAddReactionSuccessfull) inside PostsCommandService.likePostById', // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-                            message: `Internal Server Error`,
-                        },
-                    ],
-                };
+                throw new DomainException({
+                    code: DomainExceptionCode.PostNotFound,
+                    message: `Post not found`,
+                });
             }
         }
         // если прежняя реакция найдена и она не равна вновь переданной

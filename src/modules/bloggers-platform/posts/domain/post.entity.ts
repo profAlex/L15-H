@@ -139,6 +139,10 @@ export class Post {
             this.blogId = dto.blogId;
         }
     }
+
+    // updateNewestLikes(latestLikes: LikeDetailsViewModel[]): void {
+    //     (this as PostDocument).extendedLikesInfo.newestLikes = latestLikes;
+    // }
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
