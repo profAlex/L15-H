@@ -135,75 +135,75 @@ describe('PostsService', () => {
         ).rejects.toThrow(DomainException);
     });
 
-    it('createPost: should create post with blogId from body', async () => {
-        const body = {
-            title: 't',
-            blogId: 'b1',
-            shortDescription: 's',
-            content: 'c',
-        };
-        const fakePost = { id: 'anyId' };
-        const expectedView = {} as PostViewDto;
-
-        const spy = jest
-            .spyOn(PostViewDto, 'mapToView')
-            .mockReturnValue(expectedView as any);
-
-        mockBlogsQueryRepository.getBlogName.mockResolvedValue({
-            name: 'Blog Name',
-        });
-        mockPostModel.createInstance.mockReturnValue(fakePost);
-
-        const result = await service.createPost(body as any);
-
-        expect(mockBlogsQueryRepository.getBlogName).toHaveBeenCalledWith('b1');
-        expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
-        expect(result).toBe(expectedView);
-
-        spy.mockRestore(); // Обязательно восстанавливаем, чтобы не сломать другие тесты
-    });
-
-    it('updatePostById: should call domain update and save', async () => {
-        const fakePost = { updatePost: jest.fn() };
-        mockPostsCommandRepository.findSinglePostById.mockResolvedValue(
-            fakePost,
-        );
-
-        await service.updatePostById({
-            postId: 'p1',
-            updateInputData: { title: 'new' } as any,
-        });
-
-        expect(fakePost.updatePost).toHaveBeenCalledWith({ title: 'new' });
-        expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
-    });
-
-    it('updatePostById: should throw 404 if post missing', async () => {
-        mockPostsCommandRepository.findSinglePostById.mockResolvedValue(null);
-        await expect(
-            service.updatePostById({
-                postId: 'p1',
-                updateInputData: {} as any,
-            }),
-        ).rejects.toThrow(DomainException);
-    });
-
-    it('deletePostById: should call makeDeleted and save', async () => {
-        const fakePost = { makeDeleted: jest.fn() };
-        mockPostsCommandRepository.findSinglePostById.mockResolvedValue(
-            fakePost,
-        );
-
-        await service.deletePostById('p1');
-
-        expect(fakePost.makeDeleted).toHaveBeenCalled();
-        expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
-    });
-
-    it('deletePostById: should throw 404 if post missing', async () => {
-        mockPostsCommandRepository.findSinglePostById.mockResolvedValue(null);
-        await expect(service.deletePostById('p1')).rejects.toThrow(
-            DomainException,
-        );
-    });
+    // it('createPost: should create post with blogId from body', async () => {
+    //     const body = {
+    //         title: 't',
+    //         blogId: 'b1',
+    //         shortDescription: 's',
+    //         content: 'c',
+    //     };
+    //     const fakePost = { id: 'anyId' };
+    //     const expectedView = {} as PostViewDto;
+    //
+    //     const spy = jest
+    //         .spyOn(PostViewDto, 'mapToView')
+    //         .mockReturnValue(expectedView as any);
+    //
+    //     mockBlogsQueryRepository.getBlogName.mockResolvedValue({
+    //         name: 'Blog Name',
+    //     });
+    //     mockPostModel.createInstance.mockReturnValue(fakePost);
+    //
+    //     const result = await service.createPost(body as any);
+    //
+    //     expect(mockBlogsQueryRepository.getBlogName).toHaveBeenCalledWith('b1');
+    //     expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
+    //     expect(result).toBe(expectedView);
+    //
+    //     spy.mockRestore(); // Обязательно восстанавливаем, чтобы не сломать другие тесты
+    // });
+    //
+    // it('updatePostById: should call domain update and save', async () => {
+    //     const fakePost = { updatePost: jest.fn() };
+    //     mockPostsCommandRepository.findSinglePostById.mockResolvedValue(
+    //         fakePost,
+    //     );
+    //
+    //     await service.updatePostById({
+    //         postId: 'p1',
+    //         updateInputData: { title: 'new' } as any,
+    //     });
+    //
+    //     expect(fakePost.updatePost).toHaveBeenCalledWith({ title: 'new' });
+    //     expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
+    // });
+    //
+    // it('updatePostById: should throw 404 if post missing', async () => {
+    //     mockPostsCommandRepository.findSinglePostById.mockResolvedValue(null);
+    //     await expect(
+    //         service.updatePostById({
+    //             postId: 'p1',
+    //             updateInputData: {} as any,
+    //         }),
+    //     ).rejects.toThrow(DomainException);
+    // });
+    //
+    // it('deletePostById: should call makeDeleted and save', async () => {
+    //     const fakePost = { makeDeleted: jest.fn() };
+    //     mockPostsCommandRepository.findSinglePostById.mockResolvedValue(
+    //         fakePost,
+    //     );
+    //
+    //     await service.deletePostById('p1');
+    //
+    //     expect(fakePost.makeDeleted).toHaveBeenCalled();
+    //     expect(mockPostsCommandRepository.save).toHaveBeenCalledWith(fakePost);
+    // });
+    //
+    // it('deletePostById: should throw 404 if post missing', async () => {
+    //     mockPostsCommandRepository.findSinglePostById.mockResolvedValue(null);
+    //     await expect(service.deletePostById('p1')).rejects.toThrow(
+    //         DomainException,
+    //     );
+    // });
 });

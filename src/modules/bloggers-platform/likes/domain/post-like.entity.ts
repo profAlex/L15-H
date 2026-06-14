@@ -20,36 +20,25 @@
 //     },
 // },
 
-import { ApiProperty } from '@nestjs/swagger';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import {
-    ExtendedPostModel,
-    ExtendedPostModelSchema,
-} from '../../posts/domain/extended-post-model.schema';
-import { CreatePostDomainDto } from '../../posts/domain/dto/create-post.domain.dto';
 import { LikeStatus } from '../../../../core/enums/like-status.enum';
-import { UpdatePostInputDto } from '../../posts/dto/create-post-input.dto';
 import { HydratedDocument, Model } from 'mongoose';
+import { CreatePostLikeDomainDto } from './dto/create-post-like.domain.dto';
+import { UpdatePostLikeDomainDto } from './dto/update-post-like.domain.dto';
 
 @Schema({ timestamps: true })
 export class PostLike {
-    @ApiProperty()
     @Prop({ type: String, required: true })
     postId!: string;
 
-    @ApiProperty()
     @Prop({ type: String, required: true })
     userId!: string;
 
-    @ApiProperty()
     @Prop({ type: String, required: true })
     userLogin!: string;
 
     createdAt!: Date;
     updatedAt!: Date;
-
-    @Prop({ type: Date, nullable: true })
-    deletedAt!: Date | null;
 
     @Prop({
         type: String,
@@ -62,44 +51,32 @@ export class PostLike {
         return this._id.toString();
     }
 
-    static createInstance(dto: CreatePostLikeDomainDto): PostLikeDocument {
-        const { title, shortDescription, content, blogId, blogName } = dto;
-
-        const newPostLike = new this();
-        newPostLike.postId = shortDescription;
-        newPostLike.userId = content;
-        newPostLike.userLogin = title;
+    static createInstance({
+        postId,
+        userId,
+        userLogin,
+    }: CreatePostLikeDomainDto): PostLikeDocument {
+        const newPostLike = new this(); // this: Model<PostLikeDocument> в аргументы для того чтобы можно было обращаться к _id до того как
+        // const newPostLike = new this({
+        //             postId,
+        //             userId,
+        //             userLogin,
+        //             deletedAt: null,
+        //             likeStatus: LikeStatus.None,
+        //         });
+        newPostLike.postId = postId;
+        newPostLike.userId = userId;
+        newPostLike.userLogin = userLogin;
 
         newPostLike.createdAt = new Date();
-        newPostLike.deletedAt = null;
         newPostLike.likeStatus = LikeStatus.None;
 
         return newPostLike as PostLikeDocument;
     }
 
-    makeDeleted() {
-        if (this.deletedAt !== null) {
-            return;
-        }
-        this.deletedAt = new Date();
-    }
-
-    // "title": "string",
-    // "shortDescription": "string",
-    // "content": "string",
-    // "blogId": "string"
-    updatePost(dto: UpdatePostInputDto) {
-        if (dto.title !== this.title) {
-            this.title = dto.title;
-        }
-        if (dto.shortDescription !== this.shortDescription) {
-            this.shortDescription = dto.shortDescription;
-        }
-        if (dto.content !== this.content) {
-            this.content = dto.content;
-        }
-        if (dto.blogId !== this.blogId) {
-            this.blogId = dto.blogId;
+    updateLikeStatus(dto: UpdatePostLikeDomainDto) {
+        if (dto.likeStatus !== this.likeStatus) {
+            this.likeStatus = dto.likeStatus;
         }
     }
 }
@@ -108,6 +85,10 @@ export const PostLikeSchema = SchemaFactory.createForClass(PostLike);
 
 //регистрирует методы сущности в схеме
 PostLikeSchema.loadClass(PostLike);
+
+// составной индекс для поиска конкретного лайка от конкретного юзера
+// индекс уникальный
+PostLikeSchema.index({ postId: 1, userId: 1 }, { unique: true });
 
 //Типизация документа
 export type PostLikeDocument = HydratedDocument<PostLike>;

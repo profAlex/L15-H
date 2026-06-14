@@ -35,6 +35,8 @@ import { JwtAuthGuard } from '../../../authorisation/guards/bearer/jwt.auth-guar
 import { CreateNewComment } from '../../comments/application/usecases/create-new-comment.usecase';
 import { ExtractUserIfExistsFromRequest } from '../../../authorisation/decorators/extract-user-if-exists.decorator';
 import { UserContextDto } from '../../../authorisation/guards/dto/user-context.dto';
+import { ChangePostLikeStatusInputDto } from './input-dto/change-post-like-status.input.dto';
+import { ChangePostLikeStatus } from '../application/usecases/change-post-like-status.usecase';
 
 @ApiTags('Posts endpoint')
 @Controller('posts')
@@ -52,8 +54,22 @@ export class PostsController {
     // Make like/unlike/dislike/undislike operation
     @ApiOperation({ summary: 'Make like/unlike/dislike/undislike operation' })
     @ApiParam({ name: 'postId' })
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @UseGuards(JwtAuthGuard)
     @Put(':postId/like-status')
-    async applyLikeStatus() {}
+    async changePostLikeStatus(
+        @Param('postId') postId: string,
+        @Body() body: ChangePostLikeStatusInputDto,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
+    ) {
+        return this.commandBus.execute<ChangePostLikeStatus>(
+            new ChangePostLikeStatus({
+                postId: postId,
+                userId: user.id,
+                likeStatus: body.likeStatus,
+            }),
+        );
+    }
 
     // Returns comments for specified post
     @ApiOperation({ summary: 'Returns comments for specified post' })
