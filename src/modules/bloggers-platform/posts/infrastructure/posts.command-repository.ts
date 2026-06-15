@@ -9,6 +9,13 @@ export class PostsCommandRepository {
     constructor(@InjectModel(Post.name) private PostModel: PostModelType) {}
 
     async save(post: PostDocument): Promise<void> {
+        // эта часть только для тех случаев когда обновляем массив newestLikes в посте
+        if (post.isModified('extendedLikesInfo')) {
+            // для карантии что вложенный массив будет обновлен, т.к. иногда бывает что не сработает без явной поментки что он был изменен
+            post.markModified('extendedLikesInfo.newestLikes');
+        }
+
+        // ну а та часть уже для всех
         await post.save();
     }
 
@@ -38,6 +45,8 @@ export class PostsCommandRepository {
 
             // если matchedCount === 0, значит поста с таким ID уже нет в базе
             if (result.matchedCount === 0) {
+                // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
+
                 console.error(
                     `Couldn't find post with id: ${sentPostId} inside PostsCommandRepository.addPostReaction`,
                 );
@@ -47,6 +56,7 @@ export class PostsCommandRepository {
 
             return true;
         } catch (error) {
+            // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
             console.error(
                 ` Error inside PostsCommandRepository.addPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
@@ -54,97 +64,108 @@ export class PostsCommandRepository {
         }
     }
 
-    // async nullifyingPostReaction(
-    //     sentPostId: string,
-    //     oldStatus: LikeStatus,
-    // ): Promise<boolean> {
-    //     try {
-    //         const fieldToDecrement = oldStatus === LikeStatus.Like
-    //             ? 'extendedLikesInfo.likesCount'
-    //             : 'extendedLikesInfo.dislikesCount';
-    //
-    //         // создаем фильтр: ищем по ID И проверяем, что в поле больше 0
-    //         const filter: any = {
-    //             _id: sentPostId,
-    //             [fieldToDecrement]: { $gt: 0 } // Защита от ухода в минус
-    //         };
-    //
-    //         // выполняем атомарное уменьшение
-    //         const result = await PostModel.updateOne(
-    //             filter,
-    //             { $inc: { [fieldToDecrement]: -1 } }
-    //         );
-    //
-    //         if (result.matchedCount === 0) {
-    //             console.error(`Couldn't find post with id: ${sentPostId} inside  PostsCommandRepository.nullifyingPostReaction`);
-    //
-    //             return false;
-    //         }
-    //
-    //         return true;
-    //     } catch (error) {
-    //         console.error(
-    //             `Error inside PostsCommandRepository.nullifyingPostReaction: ${error instanceof Error ? error.message : "Unknown error"}`,
-    //         );
-    //
-    //         return false;
-    //     }
-    // },
-    //
-    // async switchPostReaction(
-    //     sentPostId: string,
-    //     newStatus: LikeStatus,
-    // ): Promise<boolean> {
-    //     try {
-    //         // это не нужно, т.к. updateOne сам найдет и обновит, дополнительно это делать и проверять - лишняя операция
-    //         // const comment: CommentDocument | null =
-    //         //     await CommentModel.findById(sentCommentId);
-    //         //
-    //         // if (!comment) {
-    //         //     console.error(
-    //         //         `Couldn't find comment with id: ${sentCommentId} inside CommentsCommandRepository.switchCommentReaction`,
-    //         //     );
-    //         //
-    //         //     return false;
-    //         // }
-    //
-    //         // Определяем, что прибавляем, а что отнимаем
-    //         const isEnablingLike = newStatus === LikeStatus.Like;
-    //
-    //         // Нужно убедиться, что dislikesCount > 0 перед вычитанием.
-    //         const filter: any = { _id: sentPostId };
-    //
-    //         if (isEnablingLike) {
-    //             filter["extendedLikesInfo.dislikesCount"] = { $gt: 0 };
-    //         } else {
-    //             filter["extendedLikesInfo.likesCount"] = { $gt: 0 };
-    //         }
-    //
-    //         const updateQuery = isEnablingLike
-    //             ? { "extendedLikesInfo.likesCount": 1, "extendedLikesInfo.dislikesCount": -1 }
-    //             : { "extendedLikesInfo.likesCount": -1, "extendedLikesInfo.dislikesCount": 1 };
-    //
-    //         // используем атомарный updateOne вместо save(), чтобы избежать состояния гонки
-    //         const result = await PostModel.updateOne(filter, {
-    //             $inc: updateQuery,
-    //         });
-    //
-    //         // result.matchedCount > 0 означает, что комментарий найден и обновлен
-    //         if (result.matchedCount === 0) {
-    //             console.error(
-    //                 `Couldn't find post with id: ${sentPostId} inside PostsCommandRepository.switchPostReaction`,
-    //             );
-    //
-    //             return false;
-    //         }
-    //
-    //         return true;
-    //     } catch (error) {
-    //         console.error(
-    //             `Error saving post reaction inside PostsCommandRepository.switchPostReaction: ${error instanceof Error ? error.message : "Unknown error"}`,
-    //         );
-    //
-    //         return false;
-    //     }
-    // },
+    async nullifyingPostReaction({
+        sentPostId,
+        oldStatus,
+    }: {
+        sentPostId: string;
+        oldStatus: LikeStatus;
+    }): Promise<boolean> {
+        try {
+            const fieldToDecrement =
+                oldStatus === LikeStatus.Like
+                    ? 'extendedLikesInfo.likesCount'
+                    : 'extendedLikesInfo.dislikesCount';
+
+            // создаем фильтр: ищем по ID И проверяем, что в поле больше 0
+            const filter: any = {
+                _id: sentPostId,
+                [fieldToDecrement]: { $gt: 0 }, // Защита от ухода в минус
+            };
+
+            // выполняем атомарное уменьшение
+            const result = await this.PostModel.updateOne(filter, {
+                $inc: { [fieldToDecrement]: -1 },
+            });
+
+            if (result.matchedCount === 0) {
+                // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
+
+                console.error(
+                    `Couldn't find post with id: ${sentPostId} inside  PostsCommandRepository.nullifyingPostReaction`,
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
+            console.error(
+                `Error inside PostsCommandRepository.nullifyingPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+
+            throw new InternalServerErrorException('Internal server error');
+        }
+    }
+
+    async switchPostReaction({
+        sentPostId,
+        newStatus,
+    }: {
+        sentPostId: string;
+        newStatus: LikeStatus;
+    }): Promise<boolean> {
+        try {
+            let result;
+            // Определяем, что прибавляем, а что отнимаем
+            const isEnablingLike = newStatus === LikeStatus.Like;
+
+            // если выставляем лайк меняя дизлайк
+            if (isEnablingLike) {
+                result = await this.PostModel.updateOne(
+                    {
+                        _id: sentPostId,
+                    },
+                    {
+                        $inc: {
+                            'extendedLikesInfo.likesCount': 1,
+                            'extendedLikesInfo.dislikesCount': -1,
+                        },
+                    },
+                );
+            } else {
+                // если выставляем дизлайк, меняя лайк
+                result = await this.PostModel.updateOne(
+                    {
+                        _id: sentPostId,
+                    },
+                    {
+                        $inc: {
+                            'extendedLikesInfo.likesCount': -1,
+                            'extendedLikesInfo.dislikesCount': 1,
+                        },
+                    },
+                );
+            }
+
+            // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
+            if (result.matchedCount === 0) {
+                console.error(
+                    `Couldn't find post with id: ${sentPostId} inside PostsCommandRepository.switchPostReaction`,
+                );
+
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
+            console.error(
+                `Error saving post reaction inside PostsCommandRepository.switchPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+
+            throw new InternalServerErrorException('Internal server error');
+        }
+    }
 }

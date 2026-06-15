@@ -3,5 +3,5 @@ import { LikeStatus } from '../../../../core/enums/like-status.enum';
 export type CreatePostLikeDto = {
     postId: string;
     userId: string;
-    likeStatus: LikeStatus;
+    newLikeStatus: LikeStatus;
 };

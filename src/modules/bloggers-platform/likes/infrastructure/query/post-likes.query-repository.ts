@@ -5,6 +5,8 @@ import {
 } from '../../domain/post-like.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { userInfo } from 'node:os';
+import { LikeStatus } from '../../../../../core/enums/like-status.enum';
 
 @Injectable()
 export class PostLikesQueryRepository {
@@ -31,4 +33,30 @@ export class PostLikesQueryRepository {
             userId: sentUserId,
         }));
     }
+
+    async getLatestLikesForPost(
+        sentPostId: string,
+    ): Promise<LatestLikeDetailViewModel[]> {
+        const latestLikesArray = await this.PostLikeModel.find({
+            postId: sentPostId,
+            likeStatus: LikeStatus.Like,
+        })
+            .sort({ createdAt: -1 })
+            .limit(3)
+            .lean();
+
+        return latestLikesArray.map((likeInfo) => {
+            return {
+                addedAt: likeInfo.updatedAt.toISOString(),
+                userId: likeInfo.userId,
+                login: likeInfo.userLogin,
+            };
+        });
+    }
 }
+
+export type LatestLikeDetailViewModel = {
+    addedAt: string;
+    userId: string;
+    login: string;
+};

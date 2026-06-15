@@ -31,14 +31,13 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
         private postLikesCommandRepository: PostLikesCommandRepository,
         private postLikesQueryRepository: PostLikesQueryRepository,
         private postsCommandRepository: PostsCommandRepository,
-        private postsQueryRepository: PostsQueryRepository,
         private usersExternalQueryRepository: UsersExternalQueryRepository,
     ) {
         // private readonly blogsQueryRepository: BlogsQueryRepository,
     }
 
     async execute({ dto }: ChangePostLikeStatus): Promise<void> {
-        const { postId, userId, likeStatus } = dto;
+        const { postId, userId, newLikeStatus } = dto;
 
         // проверяем что пост, которому пользователь меняет лайк-статус существует и сразу возращаем ссылку для работы
         const post =
@@ -64,7 +63,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
             );
 
         // если прежней реакции не найдено и новая реакция не None
-        if (previousReactionStatus === null && likeStatus !== 'None') {
+        if (previousReactionStatus === null && newLikeStatus !== 'None') {
             // создаем новый лайк в базе
             const newLikeDocument = this.PostLikeModel.createInstance({
                 postId: postId,
@@ -78,7 +77,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
             const ifAddReactionSuccessfull =
                 await this.postsCommandRepository.addPostReaction({
                     sentPostId: postId,
-                    newStatus: likeStatus,
+                    newStatus: newLikeStatus,
                 });
 
             if (!ifAddReactionSuccessfull) {
@@ -90,367 +89,80 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
         }
         // если прежняя реакция найдена и она не равна вновь переданной
         else if (
-            previousReactionResult !== null &&
-            previousReactionResult.likeStatus !== sentLike
+            previousReactionStatus !== null &&
+            previousReactionStatus.likeStatus !== newLikeStatus
         ) {
             // дополнительное условие - если передали лайк = none - удалить запись из лайк репозитория,
-            // не забыть вызвать nullifyReaction
+            // не забыть вызвать nullifyReaction для корректировки общего счетчика лайков-дизлайков
 
             // если новая реакция это None, тогда надо удалить запись лайка в репозитории лайков и сбросить реакцию в комменте
-            if (sentLike === 'None') {
+            if (newLikeStatus === 'None') {
                 // запоминаем какая реакция была ранее проставлена юзером
-                const previousReaction: LikeStatus =
-                    previousReactionResult.likeStatus;
+                const previousReaction = previousReactionStatus.likeStatus;
 
-                const result =
-                    await this.postsLikesCommandRepository.deletePostLikeById(
-                        previousReactionResult._id,
+                // выставляем статус лайка (запись в базе) likeStatus в None, не удаляя физически
+                const isStatusChanged = previousReactionStatus.updateLikeStatus(
+                    { likeStatus: newLikeStatus },
+                );
+
+                if (isStatusChanged) {
+                    await this.postLikesCommandRepository.save(
+                        previousReactionStatus,
                     );
-
-                if (!result) {
-                    return {
-                        data: null,
-                        statusCode: HttpStatus.InternalServerError,
-                        statusDescription: `deleteOne() error inside PostsCommandRepository.likePostById`,
-
-                        errorsMessages: [
-                            {
-                                field: 'if (!result)', // это служебная и от
-                                message:
-                                    'Unknown error inside const result = await this.postsLikesCommandRepository.deletePostLikeById',
-                            },
-                        ],
-                    };
                 }
 
                 // делаем декремент счетчика лайка или дизлайка
                 const ifNullifyingReactionSuccessfull =
-                    await post.nullifyingPostReaction(
-                        sentPostId,
-                        previousReaction,
-                    );
+                    await this.postsCommandRepository.nullifyingPostReaction({
+                        sentPostId: postId,
+                        oldStatus: previousReaction,
+                    });
 
                 if (!ifNullifyingReactionSuccessfull) {
-                    return {
-                        data: null,
-                        statusCode: HttpStatus.InternalServerError,
-                        statusDescription: `Saving reaction was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                        errorsMessages: [
-                            {
-                                field: 'if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById', // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-                                message: `Internal Server Error`,
-                            },
-                        ],
-                    };
+                    throw new DomainException({
+                        code: DomainExceptionCode.PostNotFound,
+                        message: `Post not found`,
+                    });
                 }
-                // если мы меняем реакцию на Like или Dislike (sentLike === "Like" или "Dislike")
             } else {
+                // ветка если мы меняем реакцию на Like или Dislike (sentLike === "Like" или "Dislike")
                 // меняем реакцию в коллекции лайков на новую
-                previousReactionResult.likeStatus = sentLike;
+                const isStatusChanged = previousReactionStatus.updateLikeStatus(
+                    { likeStatus: newLikeStatus },
+                );
 
-                const ifSavingLikeSuccessful =
-                    await this.postsLikesCommandRepository.savePostLikeDocument(
-                        previousReactionResult,
+                // сохраняем
+                if (isStatusChanged) {
+                    await this.postLikesCommandRepository.save(
+                        previousReactionStatus,
                     );
-
-                if (!ifSavingLikeSuccessful) {
-                    return {
-                        data: null,
-                        statusCode: HttpStatus.InternalServerError,
-                        statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                        errorsMessages: [
-                            {
-                                field: 'if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById', // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-                                message: `Internal Server Error`,
-                            },
-                        ],
-                    };
                 }
 
                 // меняем реакцию в коллекции постов на новую
                 const ifSwitchReactionSuccessfull =
-                    await post.switchPostReaction(sentPostId, sentLike);
+                    await this.postsCommandRepository.switchPostReaction({
+                        sentPostId: postId,
+                        newStatus: newLikeStatus,
+                    });
 
                 if (!ifSwitchReactionSuccessfull) {
-                    return {
-                        data: null,
-                        statusCode: HttpStatus.InternalServerError,
-                        statusDescription: `Saving reaction was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                        errorsMessages: [
-                            {
-                                field: 'if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById', // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-                                message: `Internal Server Error`,
-                            },
-                        ],
-                    };
+                    throw new DomainException({
+                        code: DomainExceptionCode.PostNotFound,
+                        message: `Post not found`,
+                    });
                 }
             }
         }
 
         // реакция изменена удачно
-        // теперь обновляем последние три поста
+        // теперь обновляем последние три лайка в посте, вытягивая инфу про крайние три лайка из базы лайков
         const refreshLastLikesstatus =
-            await this.postsLikesCommandRepository.getLatestLikesForPost(
-                sentPostId,
-            );
+            await this.postLikesQueryRepository.getLatestLikesForPost(postId);
+
+        // обновляем пост
         post.updateNewestLikes(refreshLastLikesstatus);
-        const result = await this.postsCommandRepository.savePostData(post);
 
-        if (!result) {
-            return {
-                data: null,
-                statusCode: HttpStatus.InternalServerError,
-                statusDescription: `Saving refreshed like info was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-                errorsMessages: [
-                    {
-                        field: 'if (!result) inside PostsCommandService.likePostById', // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-                        message: `Internal Server Error`,
-                    },
-                ],
-            };
-        }
-
-        return {
-            data: null,
-            statusCode: HttpStatus.NoContent,
-            statusDescription: '',
-            errorsMessages: [
-                {
-                    field: '',
-                    message: '',
-                },
-            ],
-        };
+        // сохраняем изменения в посте
+        await this.postsCommandRepository.save(post);
     }
 }
-
-// async likePostById(
-//     sentPostId: string,
-//     sentUserId: string,
-//     sentLike: LikeStatus,
-// ): Promise<CustomResult> {
-//
-//     const post = await this.postsCommandRepository.getPostById(sentPostId);
-//     if (!post) return {
-//     data: null,
-//     statusCode: HttpStatus.InternalServerError,
-//     statusDescription: `Cannot find post with ID ${sentPostId} inside PostsCommandService.likePostById.`,
-//     errorsMessages: [
-//         {
-//             field: "if (!post) inside PostsCommandService.likePostById.",
-//             message: `Internal Server Error`,
-//         },
-//     ],
-// };
-//
-// // проверяем наличие реакции на пост в коллекции пост-лайков
-// const previousReactionResult =
-//     await this.postsLikesCommandRepository.checkIfUserAlreadyReacted(
-//         sentUserId,
-//         sentPostId,
-//     );
-//
-// // находим юзера, нам нужен будет от него userLogin
-// const user = await this.usersCommandRepository.findUserByPrimaryKey(
-//     new ObjectId(sentUserId),
-// );
-// if (!user) {
-//     return {
-//         data: null,
-//         statusCode: HttpStatus.InternalServerError,
-//         statusDescription: `Cannot find user with ID ${sentUserId} inside PostsCommandService.likePostById.`,
-//         errorsMessages: [
-//             {
-//                 field: "if (!user) inside PostsCommandService.likePostById.",
-//                 message: `Internal Server Error`,
-//             },
-//         ],
-//     };
-// }
-//
-// // если прежней реакции не найдено и новая реакция не None
-// if (previousReactionResult === null && sentLike !== "None") {
-//     const newLikeDocument: PostLikeDocument =
-//         PostLikeModel.createNewPostLike(
-//             sentPostId,
-//             sentUserId,
-//             user.login,
-//             sentLike,
-//         );
-//
-//     const ifSavingLikeSuccessful =
-//         await this.postsLikesCommandRepository.savePostLikeDocument(
-//             newLikeDocument,
-//         );
-//
-//     if (!ifSavingLikeSuccessful) {
-//         return {
-//             data: null,
-//             statusCode: HttpStatus.InternalServerError,
-//             statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//             errorsMessages: [
-//                 {
-//                     field: "if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById.",
-//                     message: `Internal Server Error`,
-//                 },
-//             ],
-//         };
-//     }
-//
-//     // добавляем реакцию в счетчик реакций в базе комментариев
-//     const ifAddReactionSuccessfull =
-//         await post.addPostReaction(
-//             sentPostId,
-//             sentLike,
-//         );
-//
-//     if (!ifAddReactionSuccessfull) {
-//         return {
-//             data: null,
-//             statusCode: HttpStatus.InternalServerError,
-//             statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//             errorsMessages: [
-//                 {
-//                     field: "if(!ifAddReactionSuccessfull) inside PostsCommandService.likePostById", // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-//                     message: `Internal Server Error`,
-//                 },
-//             ],
-//         };
-//     }
-// }
-// // если прежняя реакция найдена и она не равна вновь переданной
-// else if (
-//     previousReactionResult !== null &&
-//     previousReactionResult.likeStatus !== sentLike
-// ) {
-//     // дополнительное условие - если передали лайк = none - удалить запись из лайк репозитория,
-//     // не забыть вызвать nullifyReaction
-//
-//     // если новая реакция это None, тогда надо удалить запись лайка в репозитории лайков и сбросить реакцию в комменте
-//     if (sentLike === "None") {
-//
-//         // запоминаем какая реакция была ранее проставлена юзером
-//         const previousReaction: LikeStatus =
-//             previousReactionResult.likeStatus;
-//
-//         const result =
-//             await this.postsLikesCommandRepository.deletePostLikeById(
-//                 previousReactionResult._id,
-//             );
-//
-//         if (!result) {
-//             return {
-//                 data: null,
-//                 statusCode: HttpStatus.InternalServerError,
-//                 statusDescription: `deleteOne() error inside PostsCommandRepository.likePostById`,
-//
-//                 errorsMessages: [
-//                     {
-//                         field: "if (!result)", // это служебная и от
-//                         message:
-//                             "Unknown error inside const result = await this.postsLikesCommandRepository.deletePostLikeById",
-//                     },
-//                 ],
-//             };
-//         }
-//
-//         // делаем декремент счетчика лайка или дизлайка
-//         const ifNullifyingReactionSuccessfull =
-//             await post.nullifyingPostReaction(
-//                 sentPostId,
-//                 previousReaction,
-//             );
-//
-//         if (!ifNullifyingReactionSuccessfull) {
-//             return {
-//                 data: null,
-//                 statusCode: HttpStatus.InternalServerError,
-//                 statusDescription: `Saving reaction was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//                 errorsMessages: [
-//                     {
-//                         field: "if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById", // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-//                         message: `Internal Server Error`,
-//                     },
-//                 ],
-//             };
-//         }
-//         // если мы меняем реакцию на Like или Dislike (sentLike === "Like" или "Dislike")
-//     } else {
-//
-//         // меняем реакцию в коллекции лайков на новую
-//         previousReactionResult.likeStatus = sentLike;
-//
-//         const ifSavingLikeSuccessful =
-//             await this.postsLikesCommandRepository.savePostLikeDocument(
-//                 previousReactionResult,
-//             );
-//
-//         if (!ifSavingLikeSuccessful) {
-//             return {
-//                 data: null,
-//                 statusCode: HttpStatus.InternalServerError,
-//                 statusDescription: `Saving like was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//                 errorsMessages: [
-//                     {
-//                         field: "if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById", // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-//                         message: `Internal Server Error`,
-//                     },
-//                 ],
-//             };
-//         }
-//
-//         // меняем реакцию в коллекции постов на новую
-//         const ifSwitchReactionSuccessfull =
-//             await post.switchPostReaction(
-//                 sentPostId,
-//                 sentLike,
-//             );
-//
-//         if (!ifSwitchReactionSuccessfull) {
-//             return {
-//                 data: null,
-//                 statusCode: HttpStatus.InternalServerError,
-//                 statusDescription: `Saving reaction was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//                 errorsMessages: [
-//                     {
-//                         field: "if(!ifSavingLikeSuccessful) inside PostsCommandService.likePostById", // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-//                         message: `Internal Server Error`,
-//                     },
-//                 ],
-//             };
-//         }
-//     }
-// }
-//
-// // реакция изменена удачно
-// // теперь обновляем последние три поста
-// const refreshLastLikesstatus = await this.postsLikesCommandRepository.getLatestLikesForPost(sentPostId);
-// post.updateNewestLikes(refreshLastLikesstatus);
-// const result = await this.postsCommandRepository.savePostData(post);
-//
-// if (!result) {
-//     return {
-//         data: null,
-//         statusCode: HttpStatus.InternalServerError,
-//         statusDescription: `Saving refreshed like info was not successfull for post ${sentPostId} inside PostsCommandService.likePostById.`,
-//         errorsMessages: [
-//             {
-//                 field: "if (!result) inside PostsCommandService.likePostById", // это служебная и отладочная информация, к ней НЕ должен иметь доступ фронтенд, обрабатываем внутри периметра работы бэкэнда
-//                 message: `Internal Server Error`,
-//             },
-//         ],
-//     };
-// }
-//
-// return {
-//     data: null,
-//     statusCode: HttpStatus.NoContent,
-//     statusDescription: "",
-//     errorsMessages: [
-//         {
-//             field: "",
-//             message: "",
-//         },
-//     ],
-// };
-// }

@@ -74,10 +74,19 @@ export class PostLike {
         return newPostLike as PostLikeDocument;
     }
 
-    updateLikeStatus(dto: UpdatePostLikeDomainDto) {
-        if (dto.likeStatus !== this.likeStatus) {
-            this.likeStatus = dto.likeStatus;
+    // makeAsNone() {
+    //     if (this.likeStatus !== LikeStatus.None) {
+    //         this.likeStatus = LikeStatus.None;
+    //     }
+    // }
+
+    updateLikeStatus(dto: UpdatePostLikeDomainDto): boolean {
+        if (this.likeStatus === dto.likeStatus) {
+            return false;
         }
+
+        this.likeStatus = dto.likeStatus;
+        return true;
     }
 }
 

@@ -8,6 +8,7 @@ import { CreatePostDomainDto } from './dto/create-post.domain.dto';
 import { HydratedDocument, Model } from 'mongoose';
 import { LikeStatus } from '../../../../core/enums/like-status.enum';
 import { UpdatePostInputDto } from '../dto/create-post-input.dto';
+import { LatestLikeDetailViewModel } from '../../likes/infrastructure/query/post-likes.query-repository';
 
 // post entity structure for reference:
 // export type PostStorageModel = {
@@ -140,9 +141,10 @@ export class Post {
         }
     }
 
-    // updateNewestLikes(latestLikes: LikeDetailsViewModel[]): void {
-    //     (this as PostDocument).extendedLikesInfo.newestLikes = latestLikes;
-    // }
+    updateNewestLikes(latestLikes: LatestLikeDetailViewModel[]): void {
+        // this.extendedLikesInfo.newestLikes = latestLikes;
+        this.extendedLikesInfo.newestLikes = [...latestLikes];
+    }
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
