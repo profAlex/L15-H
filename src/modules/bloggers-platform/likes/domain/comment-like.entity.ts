@@ -68,17 +68,20 @@ export class CommentLike {
         return newPostLike as CommentLikeDocument;
     }
 
-    makeDeleted() {
-        if (this.deletedAt !== null) {
-            return;
-        }
-        this.deletedAt = new Date();
-    }
+    // makeDeleted() {
+    //     if (this.deletedAt !== null) {
+    //         return;
+    //     }
+    //     this.deletedAt = new Date();
+    // }
 
-    updateLikeStatus(dto: UpdateCommentLikeDomainDto) {
-        if (dto.likeStatus !== this.likeStatus) {
-            this.likeStatus = dto.likeStatus;
+    updateLikeStatus(dto: UpdateCommentLikeDomainDto): boolean {
+        if (this.likeStatus === dto.likeStatus) {
+            return false;
         }
+
+        this.likeStatus = dto.likeStatus;
+        return true;
     }
 }
 

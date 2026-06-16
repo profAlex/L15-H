@@ -1,9 +1,4 @@
-// <PostViewDto> - This type represents the command execution result
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PostViewDto } from '../../api/view-dto/posts.view-dto';
-import { CreatePostApiInputDto } from '../../api/input-dto/create-post.api.input-dto';
-import { CreatePost } from './create-post.usecase';
-import { BlogsQueryRepository } from '../../../blogs/infrastructure/query/blogs.query-repository';
 import { PostsCommandRepository } from '../../infrastructure/posts.command-repository';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreatePostLikeDto } from '../../dto/create-post-like.dto';
@@ -12,12 +7,12 @@ import {
     PostLikeModelType,
 } from '../../../likes/domain/post-like.entity';
 import { PostLikesCommandRepository } from '../../../likes/infrastructure/post-likes.command-repostory';
-import { PostsQueryRepository } from '../../infrastructure/query/posts.query-repository';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 import { PostLikesQueryRepository } from '../../../likes/infrastructure/query/post-likes.query-repository';
 import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
 
+// <void> - This type represents the command execution result
 export class ChangePostLikeStatus extends Command<void> {
     constructor(public readonly dto: CreatePostLikeDto) {
         super();
@@ -32,9 +27,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
         private postLikesQueryRepository: PostLikesQueryRepository,
         private postsCommandRepository: PostsCommandRepository,
         private usersExternalQueryRepository: UsersExternalQueryRepository,
-    ) {
-        // private readonly blogsQueryRepository: BlogsQueryRepository,
-    }
+    ) {}
 
     async execute({ dto }: ChangePostLikeStatus): Promise<void> {
         const { postId, userId, newLikeStatus } = dto;
@@ -43,7 +36,6 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
         const post =
             await this.postsCommandRepository.findSinglePostById(postId);
         if (!post) {
-            // throw new NotFoundException("Post not found");
             throw new DomainException({
                 code: DomainExceptionCode.PostNotFound,
                 message: `Post not found`,
@@ -62,6 +54,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
                 userId,
             );
 
+        // НАЧАЛО ПРОВЕРОК
         // если прежней реакции не найдено и новая реакция не None
         if (previousReactionStatus === null && newLikeStatus !== 'None') {
             // создаем новый лайк в базе
@@ -125,7 +118,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
                     });
                 }
             } else {
-                // ветка если мы меняем реакцию на Like или Dislike (sentLike === "Like" или "Dislike")
+                // ветка на тот случай когда мы меняем(свитчим) реакцию на Like или Dislike (sentLike === "Like" или "Dislike")
                 // меняем реакцию в коллекции лайков на новую
                 const isStatusChanged = previousReactionStatus.updateLikeStatus(
                     { likeStatus: newLikeStatus },

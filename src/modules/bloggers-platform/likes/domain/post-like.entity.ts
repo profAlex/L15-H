@@ -98,7 +98,8 @@ PostLikeSchema.loadClass(PostLike);
 // составной индекс для поиска конкретного лайка от конкретного юзера
 // индекс уникальный
 PostLikeSchema.index({ postId: 1, userId: 1 }, { unique: true });
-
+// для быстрого поиска крайних трех лайков
+PostLikeSchema.index({ postId: 1, likeStatus: 1, createdAt: -1 });
 //Типизация документа
 export type PostLikeDocument = HydratedDocument<PostLike>;
 

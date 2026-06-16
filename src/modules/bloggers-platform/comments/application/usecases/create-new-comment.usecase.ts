@@ -11,7 +11,7 @@ export class CreateNewComment extends Command<CommentViewDto> {
     constructor(
         public readonly postId: string,
         public readonly body: CreateCommentApiInputDto,
-        public readonly userData: UserContextDto,
+        public readonly userId: string,
     ) {
         super();
     }
@@ -28,11 +28,11 @@ export class CreateNewCommentHandler implements ICommandHandler<CreateNewComment
     async execute({
         postId,
         body,
-        userData,
+        userId,
     }: CreateNewComment): Promise<CommentViewDto> {
         const user =
             await this.usersExternalQueryRepository.getByIdOrNotFoundFail(
-                userData.id,
+                userId,
             );
 
         const comment = this.CommentModel.createInstance({

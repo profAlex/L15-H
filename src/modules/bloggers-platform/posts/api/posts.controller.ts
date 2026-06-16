@@ -66,7 +66,7 @@ export class PostsController {
             new ChangePostLikeStatus({
                 postId: postId,
                 userId: user.id,
-                likeStatus: body.likeStatus,
+                newLikeStatus: body.likeStatus,
             }),
         );
     }
@@ -95,7 +95,7 @@ export class PostsController {
         @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<CommentViewDto> {
         return this.commandBus.execute<CreateNewComment>(
-            new CreateNewComment(postId, body, user),
+            new CreateNewComment(postId, body, user.id),
         );
     }
 

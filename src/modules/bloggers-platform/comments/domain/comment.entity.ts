@@ -79,12 +79,13 @@ export class Comment {
         return newComment as CommentDocument;
     }
 
-    // makeDeleted() {
-    //     if(this.deletedAt !== null) {
-    //         throw new Error('Comment entity already deleted');
-    //     }
-    //     this.deletedAt = new Date();
-    // }
+    makeDeleted() {
+        if (this.deletedAt !== null) {
+            return;
+        }
+
+        this.deletedAt = new Date();
+    }
 
     // updateComment(dto: UpdateCommentInputDto) {
     //
