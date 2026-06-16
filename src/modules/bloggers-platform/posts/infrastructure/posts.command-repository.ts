@@ -20,10 +20,18 @@ export class PostsCommandRepository {
     }
 
     async findSinglePostById(sentPostId: string): Promise<PostDocument | null> {
-        return this.PostModel.findOne({ _id: sentPostId, deletedAt: null });
+        return this.PostModel.findOne({
+            _id: sentPostId,
+            deletedAt: null,
+        }).exec();
+
+        // Без .exec() Mongoose возвращает так называемый Query (объект-обещание), который ведет себя как Promise,
+        // но им не является. Вызов .exec() превращает его в полноценный нативный JavaScript Promise.
+        // Это дает более чистые и понятные стек-трейсы ошибок (stack traces), если база данных начнет сбоить,
+        // и исключает странные баги с типизацией в некоторых версиях TypeScript.
     }
 
-    // методы для переключения лайков
+    // методы для переключения счетчика лайков в посте
     async addPostReaction({
         sentPostId,
         newStatus,

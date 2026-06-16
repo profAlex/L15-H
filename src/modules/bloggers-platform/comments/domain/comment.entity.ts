@@ -7,6 +7,7 @@ import { LikesInfo, LikesInfoSchema } from './likes-info.schema';
 import { HydratedDocument, Model } from 'mongoose';
 import { CreateCommentDomainInputDto } from './dto/create-comment.domain.input-dto';
 import { LikeStatus } from '../../../../core/enums/like-status.enum';
+import { UpdateCommentDomainInputDto } from './dto/update-comment.domain-input-dto';
 
 // export type CommentStorageModel = {
 //     _id: ObjectId;
@@ -87,9 +88,14 @@ export class Comment {
         this.deletedAt = new Date();
     }
 
-    // updateComment(dto: UpdateCommentInputDto) {
-    //
-    // }
+    updateComment(dto: UpdateCommentDomainInputDto): boolean {
+        if (this.content === dto.content) {
+            return false;
+        }
+
+        this.content = dto.content;
+        return true;
+    }
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);

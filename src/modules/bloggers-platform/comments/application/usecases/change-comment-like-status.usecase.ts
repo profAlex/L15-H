@@ -1,51 +1,53 @@
+// <void> - This type represents the command execution result
+import { CreatePostLikeDto } from '../../../posts/dto/create-post-like.dto';
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { PostsCommandRepository } from '../../infrastructure/posts.command-repository';
-import { InjectModel } from '@nestjs/mongoose';
-import { CreatePostLikeDto } from '../../dto/create-post-like.dto';
+import { CreateCommentLikeDto } from '../../dto/create-comment-like.dto';
 import {
-    PostLike,
-    PostLikeModelType,
-} from '../../../likes/domain/post-like.entity';
-import { PostLikesCommandRepository } from '../../../likes/infrastructure/post-likes.command-repostory';
+    CommentLike,
+    CommentLikeModelType,
+} from '../../../likes/domain/comment-like.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
+import { CommentsCommandRepository } from '../../infrastructure/comments.command-repository';
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
-import { PostLikesQueryRepository } from '../../../likes/infrastructure/query/post-likes.query-repository';
-import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
+import { CommentLikesCommandRepository } from '../../../likes/infrastructure/comment-likes.command-repository';
+import { CommentLikesQueryRepository } from '../../../likes/infrastructure/query/comment-likes.query-repository';
 
-// <void> - This type represents the command execution result
-export class ChangePostLikeStatus extends Command<void> {
-    constructor(public readonly dto: CreatePostLikeDto) {
+export class ChangeCommentLikeStatus extends Command<void> {
+    constructor(public readonly dto: CreateCommentLikeDto) {
         super();
     }
 }
 
-@CommandHandler(ChangePostLikeStatus)
-export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLikeStatus> {
+@CommandHandler(ChangeCommentLikeStatus)
+export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCommentLikeStatus> {
     constructor(
-        @InjectModel(PostLike.name) private PostLikeModel: PostLikeModelType,
-        private postLikesCommandRepository: PostLikesCommandRepository,
-        private postLikesQueryRepository: PostLikesQueryRepository,
-        private postsCommandRepository: PostsCommandRepository,
+        @InjectModel(CommentLike.name)
+        private CommentLikeModel: CommentLikeModelType,
+        private commentLikesCommandRepository: CommentLikesCommandRepository,
+        private commentLikesQueryRepository: CommentLikesQueryRepository,
+        private commentsCommandRepository: CommentsCommandRepository,
         private usersExternalQueryRepository: UsersExternalQueryRepository,
     ) {}
 
-    async execute({ dto }: ChangePostLikeStatus): Promise<void> {
-        const { postId, userId, newLikeStatus } = dto;
+    async execute({ dto }: ChangeCommentLikeStatus): Promise<void> {
+        const { commentId, userId, newLikeStatus } = dto;
 
-        // проверяем что пост, которому пользователь меняет лайк-статус существует и сразу возращаем ссылку для работы
-        const post =
-            await this.postsCommandRepository.findSinglePostById(postId);
-        if (!post) {
+        // проверяем что коммент, которому пользователь меняет лайк-статус существует и сразу возращаем ссылку для работы
+        const comment =
+            await this.commentsCommandRepository.getCommentById(commentId);
+        if (!comment) {
             throw new DomainException({
-                code: DomainExceptionCode.PostNotFound,
-                message: `Post not found`,
+                code: DomainExceptionCode.CommentNotFound,
+                message: `Comment not found`,
             });
         }
 
-        // проверяем наличие реакции на пост в коллекции пост-лайков и если он существует сразу возвращаем документ для
+        // проверяем наличие реакции на коммент в коллекции коммент-лайков и если он существует сразу возвращаем документ для изменения
         const previousReactionStatus =
-            await this.postLikesCommandRepository.findSinglePostLikeByPostIdAndUserId(
-                { postId, userId },
+            await this.commentLikesCommandRepository.findSingleCommentLikeByCommentIdAndUserId(
+                { commentId, userId },
             );
 
         // находим данные юзера, который меняет реакицю, нам нужен будет от него userLogin
@@ -58,25 +60,24 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
         // если прежней реакции не найдено и новая реакция не None
         if (previousReactionStatus === null && newLikeStatus !== 'None') {
             // создаем новый лайк в базе
-            const newLikeDocument = this.PostLikeModel.createInstance({
-                postId: postId,
+            const newLikeDocument = this.CommentLikeModel.createInstance({
+                commentId: commentId,
                 userId: userId,
-                userLogin: user.login,
             });
 
-            await this.postLikesCommandRepository.save(newLikeDocument);
+            await this.commentLikesCommandRepository.save(newLikeDocument);
 
-            // добавляем реакцию в счетчик реакций в базе постов
+            // добавляем реакцию в счетчик реакций в базе комментариев
             const ifAddReactionSuccessfull =
-                await this.postsCommandRepository.addPostReaction({
-                    sentPostId: postId,
+                await this.commentsCommandRepository.addPostReaction({
+                    sentCommentId: commentId,
                     newStatus: newLikeStatus,
                 });
 
             if (!ifAddReactionSuccessfull) {
                 throw new DomainException({
-                    code: DomainExceptionCode.PostNotFound,
-                    message: `Post not found`,
+                    code: DomainExceptionCode.CommentNotFound,
+                    message: `Comment not found`,
                 });
             }
         }

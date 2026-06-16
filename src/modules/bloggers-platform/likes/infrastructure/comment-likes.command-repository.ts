@@ -5,6 +5,7 @@ import {
     CommentLikeDocument,
     CommentLikeModelType,
 } from '../domain/comment-like.entity';
+import { PostLikeDocument } from '../domain/post-like.entity';
 
 @Injectable()
 export class CommentLikesCommandRepository {
@@ -17,13 +18,16 @@ export class CommentLikesCommandRepository {
         await commentLike.save();
     }
 
-    async findSingleCommentLikeByCommentIdAndUserId(
-        sentCommentId: string,
-        sentUserId: string,
-    ): Promise<CommentLikeDocument | null> {
+    async findSingleCommentLikeByCommentIdAndUserId({
+        commentId,
+        userId,
+    }: {
+        commentId: string;
+        userId: string;
+    }): Promise<CommentLikeDocument | null> {
         return this.CommentLikeModel.findOne({
-            postId: sentCommentId,
-            userId: sentUserId,
+            commentId,
+            userId,
         });
     }
 }

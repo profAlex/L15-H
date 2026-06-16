@@ -52,7 +52,7 @@ export class PostsController {
     }
 
     // Make like/unlike/dislike/undislike operation
-    @ApiOperation({ summary: 'Make like/unlike/dislike/undislike operation' })
+    @ApiOperation({ summary: 'Make like/unlike/dislike/undislike a post' })
     @ApiParam({ name: 'postId' })
     @HttpCode(HttpStatus.NO_CONTENT)
     @UseGuards(JwtAuthGuard)

@@ -1,8 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { LikeStatus } from '../../../../../core/enums/like-status.enum';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty } from 'class-validator';
 
-export class ChangePostLikeStatusInputDto {
+export class ChangeCommentLikeStatusInputDto {
     @ApiProperty({
         enum: LikeStatus,
         description: 'Like reaction from user',
