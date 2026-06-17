@@ -64,6 +64,7 @@ export class BlogsController {
     }
 
     // Create new blog
+
     @Post()
     @HttpCode(HttpStatus.CREATED)
     async createNewBlog(
