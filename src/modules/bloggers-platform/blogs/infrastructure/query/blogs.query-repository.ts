@@ -76,6 +76,18 @@ export class BlogsQueryRepository {
         //     });
         // }
 
+        // const sortDirection =
+        //     query.sortDirection === SortDirection.Asc ? 1 : -1;
+        //
+        // const sortByField = query.sortBy.toString(); // Жестко приводим к строке
+        //
+        console.log('sortDirection field: ', query.sortDirection);
+        console.log('sortByField field: ', query.sortBy);
+        //
+        // const blogs = await this.BlogModel.find(filter)
+        //     .sort({ [sortByField]: sortDirection }) // Используем чистую строку
+        //     .skip(query.calculateSkip())
+        //     .limit(query.pageSize);
         const blogs = await this.BlogModel.find(filter)
             .sort({
                 [query.sortBy]:

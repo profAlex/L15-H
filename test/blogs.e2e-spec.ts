@@ -64,6 +64,67 @@ describe('BlogsController (e2e)', () => {
         });
     });
 
+    it('sent empty query, should return 200 and paginated blogs storage with default query settings', async () => {
+        // 1. Сначала создадим блог, чтобы список не был пустым
+        const createDto_1 = {
+            name: 'Test Blog 1',
+            description: 'Test Description 1',
+            websiteUrl: 'https://test1.com',
+        };
+
+        // заводим в базу первый блог
+        await request(app.getHttpServer())
+            .post('/blogs')
+            .send(createDto_1)
+            .expect(201);
+
+        const createDto_2 = {
+            name: 'Test Blog 2',
+            description: 'Test Description 2',
+            websiteUrl: 'https://test2.com',
+        };
+
+        // заводим в базу второй блог
+        await request(app.getHttpServer())
+            .post('/blogs')
+            .send(createDto_2)
+            .expect(201);
+
+        // 2. Делаем запрос на получение всех блогов
+        const response = await request(app.getHttpServer())
+            .get('/blogs')
+            .expect(200);
+
+        // console.log(response.body.items[0].createdAt);
+        // console.log(response.body.items[1].createdAt);
+
+        // 3. Проверяем структуру ответа (PaginatedViewDto)
+        expect(response.body).toEqual({
+            pagesCount: 1,
+            page: 1,
+            pageSize: 10,
+            totalCount: 2,
+            items: [
+                {
+                    id: expect.any(String), // ID генерирует база
+                    name: createDto_2.name,
+                    description: createDto_2.description,
+                    websiteUrl: createDto_2.websiteUrl,
+                    createdAt: expect.any(String), // Проверяем, что дата пришла строкой ISO
+                    isMembership: false, // В createInstance у тебя забито true
+                },
+                {
+                    id: expect.any(String), // ID генерирует база
+                    name: createDto_1.name,
+                    description: createDto_1.description,
+                    websiteUrl: createDto_1.websiteUrl,
+                    createdAt: expect.any(String), // Проверяем, что дата пришла строкой ISO
+                    isMembership: false, // В createInstance у тебя забито true
+                },
+            ],
+        });
+    });
+
     it('should return empty pagination if no blogs exist', async () => {
         const response = await request(app.getHttpServer())
             .get('/blogs')
