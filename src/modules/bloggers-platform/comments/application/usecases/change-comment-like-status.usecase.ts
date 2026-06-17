@@ -69,7 +69,7 @@ export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCom
 
             // добавляем реакцию в счетчик реакций в базе комментариев
             const ifAddReactionSuccessfull =
-                await this.commentsCommandRepository.addPostReaction({
+                await this.commentsCommandRepository.addCommentReaction({
                     sentCommentId: commentId,
                     newStatus: newLikeStatus,
                 });
@@ -100,17 +100,19 @@ export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCom
                 );
 
                 if (isStatusChanged) {
-                    await this.postLikesCommandRepository.save(
+                    await this.commentLikesCommandRepository.save(
                         previousReactionStatus,
                     );
                 }
 
                 // делаем декремент счетчика лайка или дизлайка
                 const ifNullifyingReactionSuccessfull =
-                    await this.postsCommandRepository.nullifyingPostReaction({
-                        sentPostId: postId,
-                        oldStatus: previousReaction,
-                    });
+                    await this.commentsCommandRepository.nullifyCommentReaction(
+                        {
+                            sentCommentId: commentId,
+                            oldStatus: previousReaction,
+                        },
+                    );
 
                 if (!ifNullifyingReactionSuccessfull) {
                     throw new DomainException({
@@ -127,15 +129,15 @@ export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCom
 
                 // сохраняем
                 if (isStatusChanged) {
-                    await this.postLikesCommandRepository.save(
+                    await this.commentLikesCommandRepository.save(
                         previousReactionStatus,
                     );
                 }
 
                 // меняем реакцию в коллекции постов на новую
                 const ifSwitchReactionSuccessfull =
-                    await this.postsCommandRepository.switchPostReaction({
-                        sentPostId: postId,
+                    await this.commentsCommandRepository.switchCommentReaction({
+                        sentCommentId: commentId,
                         newStatus: newLikeStatus,
                     });
 
@@ -148,15 +150,15 @@ export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCom
             }
         }
 
-        // реакция изменена удачно
-        // теперь обновляем последние три лайка в посте, вытягивая инфу про крайние три лайка из базы лайков
-        const refreshLastLikesstatus =
-            await this.postLikesQueryRepository.getLatestLikesForPost(postId);
-
-        // обновляем пост
-        post.updateNewestLikes(refreshLastLikesstatus);
-
-        // сохраняем изменения в посте
-        await this.postsCommandRepository.save(post);
+        // // реакция изменена удачно
+        // // теперь обновляем последние три лайка в посте, вытягивая инфу про крайние три лайка из базы лайков
+        // const refreshLastLikesstatus =
+        //     await this.postLikesQueryRepository.getLatestLikesForPost(postId);
+        //
+        // // обновляем пост
+        // post.updateNewestLikes(refreshLastLikesstatus);
+        //
+        // // сохраняем изменения в посте
+        // await this.postsCommandRepository.save(post);
     }
 }

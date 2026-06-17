@@ -32,7 +32,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
     async execute({ dto }: ChangePostLikeStatus): Promise<void> {
         const { postId, userId, newLikeStatus } = dto;
 
-        // проверяем что пост, которому пользователь меняет лайк-статус существует и сразу возращаем ссылку для работы
+        // проверяем что пост, которому пользователь меняет лайк-статус, существует и сразу возращаем ссылку для работы
         const post =
             await this.postsCommandRepository.findSinglePostById(postId);
         if (!post) {
@@ -106,7 +106,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
 
                 // делаем декремент счетчика лайка или дизлайка
                 const ifNullifyingReactionSuccessfull =
-                    await this.postsCommandRepository.nullifyingPostReaction({
+                    await this.postsCommandRepository.nullifyPostReaction({
                         sentPostId: postId,
                         oldStatus: previousReaction,
                     });

@@ -1,5 +1,5 @@
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
     Comment,
     CommentDocument,
@@ -10,6 +10,7 @@ import { GetCommentsQueryParams } from '../api/input-dto/get-comments-query-para
 import { PaginatedViewDto } from '../../../../core/dto/base.paginated.view-dto';
 import { SortDirection } from '../../../../core/dto/base.query-params.input-dto';
 import { CreateCommentApiInputDto } from '../api/input-dto/create-comment.api.input-dto';
+import { LikeStatus } from '../../../../core/enums/like-status.enum';
 
 @Injectable()
 export class CommentsCommandRepository {
@@ -38,7 +39,7 @@ export class CommentsCommandRepository {
         sentCommentId,
         newStatus,
     }: {
-        sentPostId: string;
+        sentCommentId: string;
         newStatus: LikeStatus;
     }): Promise<boolean> {
         try {
@@ -48,8 +49,8 @@ export class CommentsCommandRepository {
                     : { 'extendedLikesInfo.dislikesCount': 1 };
 
             // атомарный апдейт для избегания состояния гонки
-            const result = await this.PostModel.updateOne(
-                { _id: sentPostId },
+            const result = await this.CommentModel.updateOne(
+                { _id: sentCommentId },
                 { $inc: updateQuery },
             );
 
@@ -58,7 +59,7 @@ export class CommentsCommandRepository {
                 // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
 
                 console.error(
-                    `Couldn't find post with id: ${sentPostId} inside PostsCommandRepository.addPostReaction`,
+                    `Couldn't find comment with id: ${sentCommentId} inside CommentsCommandRepository.addCommentReaction`,
                 );
 
                 return false;
@@ -68,17 +69,17 @@ export class CommentsCommandRepository {
         } catch (error) {
             // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
             console.error(
-                ` Error inside PostsCommandRepository.addPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                ` Error inside CommentsCommandRepository.addCommentReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
             throw new InternalServerErrorException('Internal server error');
         }
     }
 
-    async nullifyingPostReaction({
-        sentPostId,
+    async nullifyCommentReaction({
+        sentCommentId,
         oldStatus,
     }: {
-        sentPostId: string;
+        sentCommentId: string;
         oldStatus: LikeStatus;
     }): Promise<boolean> {
         try {
@@ -89,20 +90,19 @@ export class CommentsCommandRepository {
 
             // создаем фильтр: ищем по ID И проверяем, что в поле больше 0
             const filter: any = {
-                _id: sentPostId,
+                _id: sentCommentId,
                 [fieldToDecrement]: { $gt: 0 }, // Защита от ухода в минус
             };
 
-            // выполняем атомарное уменьшение
-            const result = await this.PostModel.updateOne(filter, {
+            // выполняем атомарное уменьшение счетчика
+            const result = await this.CommentModel.updateOne(filter, {
                 $inc: { [fieldToDecrement]: -1 },
             });
 
             if (result.matchedCount === 0) {
                 // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
-
                 console.error(
-                    `Couldn't find post with id: ${sentPostId} inside  PostsCommandRepository.nullifyingPostReaction`,
+                    `Couldn't find comment with id: ${sentCommentId} inside CommentsCommandRepository.nullifyPostReaction`,
                 );
 
                 return false;
@@ -112,18 +112,18 @@ export class CommentsCommandRepository {
         } catch (error) {
             // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
             console.error(
-                `Error inside PostsCommandRepository.nullifyingPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                `Error inside CommentsCommandRepository.nullifyPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
 
             throw new InternalServerErrorException('Internal server error');
         }
     }
 
-    async switchPostReaction({
-        sentPostId,
+    async switchCommentReaction({
+        sentCommentId,
         newStatus,
     }: {
-        sentPostId: string;
+        sentCommentId: string;
         newStatus: LikeStatus;
     }): Promise<boolean> {
         try {
@@ -133,9 +133,9 @@ export class CommentsCommandRepository {
 
             // если выставляем лайк меняя дизлайк
             if (isEnablingLike) {
-                result = await this.PostModel.updateOne(
+                result = await this.CommentModel.updateOne(
                     {
-                        _id: sentPostId,
+                        _id: sentCommentId,
                     },
                     {
                         $inc: {
@@ -146,9 +146,9 @@ export class CommentsCommandRepository {
                 );
             } else {
                 // если выставляем дизлайк, меняя лайк
-                result = await this.PostModel.updateOne(
+                result = await this.CommentModel.updateOne(
                     {
-                        _id: sentPostId,
+                        _id: sentCommentId,
                     },
                     {
                         $inc: {
@@ -162,7 +162,7 @@ export class CommentsCommandRepository {
             // обработка на тот случай, если пост был удален пока мы занимались вычислениями или сеть залагала
             if (result.matchedCount === 0) {
                 console.error(
-                    `Couldn't find post with id: ${sentPostId} inside PostsCommandRepository.switchPostReaction`,
+                    `Couldn't find comment with id: ${sentCommentId} inside CommentsCommandRepository.switchCommentReaction`,
                 );
 
                 return false;
@@ -172,7 +172,7 @@ export class CommentsCommandRepository {
         } catch (error) {
             // а эта обработка общих ошибок инфраструктуры, то есть если именно проблема какая-то случилось при запросе к базы, может быть любой сбой. но это серьезная неисправность
             console.error(
-                `Error saving post reaction inside PostsCommandRepository.switchPostReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                `Error saving comment reaction inside CommentsCommandRepository.switchCommentReaction: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
 
             throw new InternalServerErrorException('Internal server error');

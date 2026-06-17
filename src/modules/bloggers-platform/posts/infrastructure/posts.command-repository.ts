@@ -72,7 +72,7 @@ export class PostsCommandRepository {
         }
     }
 
-    async nullifyingPostReaction({
+    async nullifyPostReaction({
         sentPostId,
         oldStatus,
     }: {
