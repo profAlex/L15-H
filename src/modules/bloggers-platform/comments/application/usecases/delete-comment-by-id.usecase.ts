@@ -1,7 +1,7 @@
 import { Command, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
 import { InjectModel } from '@nestjs/mongoose';
-import { CommentModelType } from '../../domain/comment.entity';
+import { Comment, CommentModelType } from '../../domain/comment.entity';
 import { CommentsCommandRepository } from '../../infrastructure/comments.command-repository';
 import { CreateNewComment } from './create-new-comment.usecase';
 import { CommentViewDto } from '../../api/view-dto/comments.view-dto';

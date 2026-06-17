@@ -3,7 +3,7 @@ import { CommentViewDto } from '../../api/view-dto/comments.view-dto';
 import { CreateCommentApiInputDto } from '../../api/input-dto/create-comment.api.input-dto';
 import { UsersExternalQueryRepository } from '../../../../user-accounts/infrastructure/external-query/users.external-query-repository';
 import { InjectModel } from '@nestjs/mongoose';
-import { CommentModelType } from '../../domain/comment.entity';
+import { Comment, CommentModelType } from '../../domain/comment.entity';
 import { CommentsCommandRepository } from '../../infrastructure/comments.command-repository';
 import { UserContextDto } from '../../../../authorisation/guards/dto/user-context.dto';
 

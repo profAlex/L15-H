@@ -24,6 +24,20 @@ import { CreatePostHandler } from './posts/application/usecases/create-post.usec
 import { DeletePostByIdHandler } from './posts/application/usecases/delete-post-by-id.usecase';
 import { UsersExternalQueryRepository } from '../user-accounts/infrastructure/external-query/users.external-query-repository';
 import { CreateNewCommentHandler } from './comments/application/usecases/create-new-comment.usecase';
+import { UpdateCommentByIdHandler } from './comments/application/usecases/update-comment-by-id.usecase';
+import { DeleteCommentByIdHandler } from './comments/application/usecases/delete-comment-by-id.usecase';
+import { ChangeCommentLikeStatusHandler } from './comments/application/usecases/change-comment-like-status.usecase';
+import { ChangePostLikeStatusHandler } from './posts/application/usecases/change-post-like-status.usecase';
+import {
+    CommentLike,
+    CommentLikeSchema,
+} from './likes/domain/comment-like.entity';
+import { PostLike, PostLikeSchema } from './likes/domain/post-like.entity';
+import { CommentLikesCommandRepository } from './likes/infrastructure/comment-likes.command-repository';
+import { CommentLikesQueryRepository } from './likes/infrastructure/query/comment-likes.query-repository';
+import { PostLikesCommandRepository } from './likes/infrastructure/post-likes.command-repostory';
+import { PostLikesQueryRepository } from './likes/infrastructure/query/post-likes.query-repository';
+import { User, UserSchema } from '../user-accounts/domain/user.entity';
 
 //тут регистрируем провайдеры всех сущностей блоггерской платформы (blogs, posts, comments, etc...)
 @Module({
@@ -33,12 +47,23 @@ import { CreateNewCommentHandler } from './comments/application/usecases/create-
         MongooseModule.forFeature([
             { name: Comment.name, schema: CommentSchema },
         ]),
+        MongooseModule.forFeature([
+            { name: CommentLike.name, schema: CommentLikeSchema },
+        ]),
+        MongooseModule.forFeature([
+            { name: PostLike.name, schema: PostLikeSchema },
+        ]),
+        MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
 
         UserAccountsModule,
     ],
     controllers: [BlogsController, PostsController, CommentsController],
     providers: [
+        ChangeCommentLikeStatusHandler,
+        DeleteCommentByIdHandler,
+        UpdateCommentByIdHandler,
         CreateNewCommentHandler,
+        ChangePostLikeStatusHandler,
         DeletePostByIdHandler,
         UpdatePostByIdHandler,
         CreatePostHandler,
@@ -55,6 +80,10 @@ import { CreateNewCommentHandler } from './comments/application/usecases/create-
         CommentsQueryRepository,
         CommentsCommandRepository,
         UsersExternalQueryRepository,
+        CommentLikesCommandRepository,
+        CommentLikesQueryRepository,
+        PostLikesCommandRepository,
+        PostLikesQueryRepository,
     ],
 })
 export class BloggersPlatformModule {}
