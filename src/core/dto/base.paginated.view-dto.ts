@@ -18,10 +18,10 @@ export class PaginatedViewDto<T> {
         size: number;
         totalCount: number;
     }) {
-        this.totalCount = data.totalCount;
         this.pagesCount = Math.ceil(data.totalCount / data.size) || 0; // Защита от NaN, если size = 0
         this.page = data.page;
         this.pageSize = data.size;
+        this.totalCount = data.totalCount;
         this.items = data.items;
     }
 
