@@ -19,8 +19,10 @@ const DEFAULT_MAIL_HOST = 'smtp.yandex.ru';
 const DEFAULT_MAIL_LOGIN = 'geniusb198';
 const DEFAULT_MAIL_PASS = 'zjtrfatkvzoxowdr';
 
-const DEFAULT_MONGO_URI = 'mongodb://localhost:27017/incubator_local_db';
-// 'mongodb+srv://bolly198:68JauVAaIi2fm9UW@newlearningcluster.1tnov1c.mongodb.net/?appName=NewLearningCluster';
+const DEFAULT_MONGO_URI =
+    'mongodb+srv://bolly198:68JauVAaIi2fm9UW@newlearningcluster.1tnov1c.mongodb.net/?appName=NewLearningCluster';
+
+// 'mongodb://localhost:27017/incubator_local_db';
 
 // структура конфигурационных значений
 type Config = {
