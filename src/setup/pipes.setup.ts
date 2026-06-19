@@ -49,7 +49,7 @@ export function pipesSetup(app: INestApplication) {
             whitelist: true,
 
             //Выдавать первую ошибку для каждого поля
-            stopAtFirstError: false,
+            stopAtFirstError: true,
             // Для преобразования ошибок класс валидатора в необходимый вид
             exceptionFactory: (errors) => {
                 const formattedErrors = errorFormatter(errors);
