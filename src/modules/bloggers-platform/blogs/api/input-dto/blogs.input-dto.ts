@@ -6,16 +6,23 @@ import {
     Matches,
     MaxLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBlogInputDto {
     @ApiProperty()
     @IsString()
+    @Transform(({ value }) =>
+        typeof value === 'string' ? value.trim() : value,
+    ) // Тоже полезно для описания
     @IsNotEmpty()
     @MaxLength(15)
     name: string = '';
 
     @ApiProperty()
     @IsString()
+    @Transform(({ value }) =>
+        typeof value === 'string' ? value.trim() : value,
+    ) // Тоже полезно для описания
     @IsNotEmpty()
     @MaxLength(500)
     description: string = '';
