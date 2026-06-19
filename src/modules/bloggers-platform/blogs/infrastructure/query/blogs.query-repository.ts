@@ -81,8 +81,8 @@ export class BlogsQueryRepository {
         //
         // const sortByField = query.sortBy.toString(); // Жестко приводим к строке
         //
-        console.log('sortDirection field: ', query.sortDirection);
-        console.log('sortByField field: ', query.sortBy);
+        // console.log('sortDirection field: ', query.sortDirection);
+        // console.log('sortByField field: ', query.sortBy);
         //
         // const blogs = await this.BlogModel.find(filter)
         //     .sort({ [sortByField]: sortDirection }) // Используем чистую строку

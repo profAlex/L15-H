@@ -1,7 +1,14 @@
-import {INestApplication, ValidationError, ValidationPipe} from '@nestjs/common';
-import {Error} from "mongoose";
-import {DomainException, Extension} from "../core/exceptions/domain-exceptions";
-import {DomainExceptionCode} from "../core/exceptions/domain-exception-codes";
+import {
+    INestApplication,
+    ValidationError,
+    ValidationPipe,
+} from '@nestjs/common';
+import { Error } from 'mongoose';
+import {
+    DomainException,
+    Extension,
+} from '../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../core/exceptions/domain-exception-codes';
 
 export const errorFormatter = (
     errors: ValidationError[],
@@ -42,7 +49,7 @@ export function pipesSetup(app: INestApplication) {
             whitelist: true,
 
             //Выдавать первую ошибку для каждого поля
-            stopAtFirstError: true,
+            stopAtFirstError: false,
             // Для преобразования ошибок класс валидатора в необходимый вид
             exceptionFactory: (errors) => {
                 const formattedErrors = errorFormatter(errors);
