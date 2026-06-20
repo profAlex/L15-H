@@ -13,7 +13,7 @@ export class CreateBlogInputDto {
     @IsString()
     @Transform(({ value }) =>
         typeof value === 'string' ? value.trim() : value,
-    ) // Тоже полезно для описания
+    )
     @IsNotEmpty()
     @MaxLength(15)
     name: string = '';
@@ -22,7 +22,7 @@ export class CreateBlogInputDto {
     @IsString()
     @Transform(({ value }) =>
         typeof value === 'string' ? value.trim() : value,
-    ) // Тоже полезно для описания
+    )
     @IsNotEmpty()
     @MaxLength(500)
     description: string = '';
