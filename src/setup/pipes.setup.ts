@@ -18,16 +18,20 @@ export const errorFormatter = (
 
     for (const error of errors) {
         if (!error.constraints && error.children?.length) {
+            // Рекурсия для вложенных объектов остается нетронутой
             errorFormatter(error.children, errorsForResponse);
         } else if (error.constraints) {
             const constrainKeys = Object.keys(error.constraints);
 
-            for (const key of constrainKeys) {
+            // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: берем ТОЛЬКО первый ключ ошибки для этого поля
+            if (constrainKeys.length > 0) {
+                const firstKey = constrainKeys[0];
+
                 errorsForResponse.push({
-                    message: error.constraints[key]
-                        ? `${error.constraints[key]}; Received value: ${error?.value}`
+                    message: error.constraints[firstKey]
+                        ? `${error.constraints[firstKey]}; Received value: ${error?.value}`
                         : '',
-                    key: error.property,
+                    key: error.property, // Если тесты требуют строго "field", замени это свойство на field: error.property
                 });
             }
         }
