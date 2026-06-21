@@ -39,7 +39,7 @@ export class AuthController {
     ): Promise<{
         accessToken: string;
     }> {
-        const refreshToken = 'dummy';
+        const refreshToken = 'fakeHeader.fakePayload.fakeSignature';
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             // secure: true,

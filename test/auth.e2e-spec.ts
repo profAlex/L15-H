@@ -1,10 +1,10 @@
-import {INestApplication} from "@nestjs/common";
-import {Test, TestingModule} from "@nestjs/testing";
-import {AppModule} from "../src/app.module";
-import {appSetup} from "../src/setup/app.setup";
-import request from "supertest";
-import {EmailService} from "../src/modules/notifications/email.service";
-import {User} from "../src/modules/user-accounts/domain/user.entity";
+import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppModule } from '../src/app.module';
+import { appSetup } from '../src/setup/app.setup';
+import request from 'supertest';
+import { EmailService } from '../src/modules/notifications/email.service';
+import { User } from '../src/modules/user-accounts/domain/user.entity';
 
 describe('UsersController and AuthController (e2e)', () => {
     let app: INestApplication;
@@ -17,8 +17,6 @@ describe('UsersController and AuthController (e2e)', () => {
         app = testingAppModule.createNestApplication();
         appSetup(app); // не забываем подключить глобальные префиксы, пайпы
         await app.init();
-
-
     });
 
     afterAll(async () => {
@@ -35,9 +33,8 @@ describe('UsersController and AuthController (e2e)', () => {
         // глобально внутри всего describe, и это будет сбивать логику проверок
         jest.spyOn(
             EmailService.prototype,
-            "sendConfirmationEmail"
-        )
-            .mockResolvedValue(undefined);
+            'sendConfirmationEmail',
+        ).mockResolvedValue(undefined);
     });
 
     afterEach(async () => {
@@ -46,15 +43,15 @@ describe('UsersController and AuthController (e2e)', () => {
     });
 
     it('POST /users and POST /auth/login - should return 201 and userview of a created user', async () => {
-
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
         const login = 'admin';
         const password = 'qwerty';
-        const authHeader = 'Basic ' + Buffer.from(`${login}:${password}`).toString('base64');
+        const authHeader =
+            'Basic ' + Buffer.from(`${login}:${password}`).toString('base64');
 
         const createUserResponse = await request(app.getHttpServer())
             .post('/users')
@@ -73,12 +70,12 @@ describe('UsersController and AuthController (e2e)', () => {
             id: expect.any(String),
             login: user_1.login,
             email: user_1.email,
-            createdAt: expect.any(String)
+            createdAt: expect.any(String),
         });
 
         const createAuthLoginResponse = await request(app.getHttpServer())
             .post('/auth/login')
-            .send({loginOrEmail: user_1.login, password: user_1.password})
+            .send({ loginOrEmail: user_1.login, password: user_1.password })
             .expect(200);
 
         // {
@@ -87,20 +84,44 @@ describe('UsersController and AuthController (e2e)', () => {
         // console.log("TEST_STOP: ", createAuthLoginResponse.body.accessToken.toString());
 
         expect(createAuthLoginResponse.body.accessToken).toBeDefined();
-        expect(createAuthLoginResponse.body.accessToken).toEqual(expect.any(String));
+        expect(createAuthLoginResponse.body.accessToken).toEqual(
+            expect.any(String),
+        );
 
+        // ==========================================
+        // 🍪 ПРОВЕРКА КУКИ REFRESH-ТОКЕНА
+        // ==========================================
 
+        // 1. Проверяем, что массив заголовков set-cookie вообще существует
+        expect(createAuthLoginResponse.headers['set-cookie']).toBeDefined();
+
+        // ищем нашу куку среди установленных кук
+        const cookies = createAuthLoginResponse.headers['set-cookie'];
+        const refreshTokenCookie = cookies.find((cookie) =>
+            cookie.includes('refreshToken'),
+        );
+
+        // кука с именем refreshToken была найдена
+        expect(refreshTokenCookie).toBeDefined();
+
+        // проверка флагов безопасности
+        expect(refreshTokenCookie).toContain('refreshToken=');
+        expect(refreshTokenCookie).toContain('HttpOnly');
+
+        // expect(refreshTokenCookie).toContain('Secure');
     });
 
-
     it('POST /auth/registration - should return status 204 and create new user and send confirmation email with code', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         const createUserResponse = await request(app.getHttpServer())
             .post('/auth/registration')
@@ -109,24 +130,25 @@ describe('UsersController and AuthController (e2e)', () => {
 
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
-
     });
 
-
     it('POST /auth/registration - should return status 400 while trying to register user with same email', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         const user_2 = {
-            login: "qwerty2",
-            password: "lg-988508_",
-            email: "example@example.dev"
-        }
+            login: 'qwerty2',
+            password: 'lg-988508_',
+            email: 'example@example.dev',
+        };
 
         const createUserResponse1 = await request(app.getHttpServer())
             .post('/auth/registration')
@@ -144,19 +166,21 @@ describe('UsersController and AuthController (e2e)', () => {
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
     });
 
-
     it('POST /auth/registration-email-resending" - status 204, should send email with new code if user exists but not confirmed yet', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         const user_1_resending = {
-            email: "example@example.dev"
-        }
+            email: 'example@example.dev',
+        };
 
         const createUserResponse1 = await request(app.getHttpServer())
             .post('/auth/registration')
@@ -173,19 +197,19 @@ describe('UsersController and AuthController (e2e)', () => {
 
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(2);
         expect(sendConfirmationEmailSpy.mock.calls[1][0]).toBe(user_1.email);
-
     });
 
-
     it('POST /auth/registration-confirmation - status 204, should confirm registration by email', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
-
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         await request(app.getHttpServer())
             .post('/auth/registration')
@@ -194,11 +218,13 @@ describe('UsersController and AuthController (e2e)', () => {
 
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
-        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(expect.any(String));
+        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(
+            expect.any(String),
+        );
 
         const userConfirmationCode = {
             code: sendConfirmationEmailSpy.mock.calls[0][1],
-        }
+        };
 
         console.log(userConfirmationCode.code);
 
@@ -212,18 +238,19 @@ describe('UsersController and AuthController (e2e)', () => {
             .post('/auth/login') // или /auth/login, смотря какой у тебя эндпоинт
             .send({ loginOrEmail: user_1.login, password: user_1.password })
             .expect(200);
-
     });
 
-
     it('POST /auth/registration-confirmation - status 400, should return error if code already confirmed', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         await request(app.getHttpServer())
             .post('/auth/registration')
@@ -232,11 +259,13 @@ describe('UsersController and AuthController (e2e)', () => {
 
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
-        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(expect.any(String));
+        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(
+            expect.any(String),
+        );
 
         const userConfirmationCode = {
             code: sendConfirmationEmailSpy.mock.calls[0][1],
-        }
+        };
 
         console.log(userConfirmationCode.code);
 
@@ -258,16 +287,17 @@ describe('UsersController and AuthController (e2e)', () => {
             .expect(400);
     });
 
-
     it('POST /auth/registration-email-resending" - status 400, should return error if email already confirmed', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
-
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         // регистрируем юзера
         await request(app.getHttpServer())
@@ -278,10 +308,9 @@ describe('UsersController and AuthController (e2e)', () => {
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
 
-
         const userConfirmationCode = {
             code: sendConfirmationEmailSpy.mock.calls[0][1],
-        }
+        };
 
         console.log(userConfirmationCode.code);
 
@@ -291,29 +320,28 @@ describe('UsersController and AuthController (e2e)', () => {
             .send(userConfirmationCode)
             .expect(204);
 
-
         const user_1_resending = {
-            email: "example@example.dev"
-        }
+            email: 'example@example.dev',
+        };
 
         // пытаемся повторно выслать код после подтверждения
         await request(app.getHttpServer())
             .post('/auth/registration-email-resending')
             .send(user_1_resending)
             .expect(400);
-
     });
 
-
     it('POST /auth/registration-confirmation - status 400, should return error if code doesnt exist', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
-
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         await request(app.getHttpServer())
             .post('/auth/registration')
@@ -322,11 +350,13 @@ describe('UsersController and AuthController (e2e)', () => {
 
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
-        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(expect.any(String));
+        expect(sendConfirmationEmailSpy.mock.calls[0][1]).toStrictEqual(
+            expect.any(String),
+        );
 
         const userConfirmationCode = {
-            code: "not existing code",
-        }
+            code: 'not existing code',
+        };
 
         // console.log(userConfirmationCode.code);
 
@@ -335,19 +365,19 @@ describe('UsersController and AuthController (e2e)', () => {
             .post('/auth/registration-confirmation')
             .send(userConfirmationCode)
             .expect(400);
-
     });
 
-
     it('POST /auth/registration-email-resending" - status 400, should return error if user email doesnt exist', async () => {
-        const sendConfirmationEmailSpy = jest.spyOn(EmailService.prototype, 'sendConfirmationEmail');
+        const sendConfirmationEmailSpy = jest.spyOn(
+            EmailService.prototype,
+            'sendConfirmationEmail',
+        );
 
         const user_1 = {
-            login: "qwerty1",
-            password: "lg-988508",
-            email: "example@example.dev"
-        }
-
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
 
         // регистрируем юзера
         await request(app.getHttpServer())
@@ -358,16 +388,14 @@ describe('UsersController and AuthController (e2e)', () => {
         expect(sendConfirmationEmailSpy).toHaveBeenCalledTimes(1);
         expect(sendConfirmationEmailSpy.mock.calls[0][0]).toBe(user_1.email);
 
-
         const user_1_resending = {
-            email: "non_existing@example.dev"
-        }
+            email: 'non_existing@example.dev',
+        };
 
         // пытаемся повторно выслать код после подтверждения, но с неверным епмейлом
         await request(app.getHttpServer())
             .post('/auth/registration-email-resending')
             .send(user_1_resending)
             .expect(400);
-
     });
 });
