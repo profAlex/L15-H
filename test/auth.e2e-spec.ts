@@ -89,14 +89,17 @@ describe('UsersController and AuthController (e2e)', () => {
         );
 
         // ==========================================
-        // 🍪 ПРОВЕРКА КУКИ REFRESH-ТОКЕНА
+        // ПРОВЕРКА КУКИ REFRESH-ТОКЕНА
         // ==========================================
 
-        // 1. Проверяем, что массив заголовков set-cookie вообще существует
+        // проверяем, что массив заголовков set-cookie вообще существует
         expect(createAuthLoginResponse.headers['set-cookie']).toBeDefined();
 
         // ищем нашу куку среди установленных кук
-        const cookies = createAuthLoginResponse.headers['set-cookie'];
+        const rawCookies = createAuthLoginResponse.headers['set-cookie'];
+
+        // Превращаем в массив в любом случае (если это была строка, оборачиваем в массив)
+        const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
         const refreshTokenCookie = cookies.find((cookie) =>
             cookie.includes('refreshToken'),
         );

@@ -42,7 +42,7 @@ export class AuthController {
         const refreshToken = 'fakeHeader.fakePayload.fakeSignature';
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            // secure: true,
+            secure: true,
             sameSite: 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
