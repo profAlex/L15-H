@@ -23,7 +23,7 @@ export const errorFormatter = (
         } else if (error.constraints) {
             const constrainKeys = Object.keys(error.constraints);
 
-            // КРИТИЧЕСКОЕ ИЗМЕНЕНИЕ: берем ТОЛЬКО первый ключ ошибки для этого поля
+            // берем ТОЛЬКО первый ключ ошибки для этого поля, class-validator как-то странно работает, при stopAtFirstError: true, иногда перестает идти дальше, надо разбираться..так пока что работает
             if (constrainKeys.length > 0) {
                 const firstKey = constrainKeys[0];
 
