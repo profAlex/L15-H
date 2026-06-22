@@ -64,6 +64,7 @@ export class ChangePostLikeStatusHandler implements ICommandHandler<ChangePostLi
                 userLogin: user.login,
             });
 
+            newLikeDocument.likeStatus = newLikeStatus;
             await this.postLikesCommandRepository.save(newLikeDocument);
 
             // добавляем реакцию в счетчик реакций в базе постов

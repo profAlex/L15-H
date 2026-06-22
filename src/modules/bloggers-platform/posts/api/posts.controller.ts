@@ -31,7 +31,10 @@ import { UpdatePostById } from '../application/usecases/update-post-by-id.usecas
 import { DeletePostById } from '../application/usecases/delete-post-by-id.usecase';
 import { BasicAuthGuard } from '../../../authorisation/guards/basic/basic.auth-guard';
 import { CreateCommentApiInputDto } from '../../comments/api/input-dto/create-comment.api.input-dto';
-import { JwtAuthGuard } from '../../../authorisation/guards/bearer/jwt.auth-guard';
+import {
+    JwtAuthGuard,
+    JwtOptionalAuthGuard,
+} from '../../../authorisation/guards/bearer/jwt.auth-guard';
 import { CreateNewComment } from '../../comments/application/usecases/create-new-comment.usecase';
 import { ExtractUserIfExistsFromRequest } from '../../../authorisation/decorators/extract-user-if-exists.decorator';
 import { UserContextDto } from '../../../authorisation/guards/dto/user-context.dto';
@@ -121,9 +124,19 @@ export class PostsController {
     // Return post by id
     @ApiOperation({ summary: 'Return post by id' })
     @ApiParam({ name: 'id' })
+    @UseGuards(JwtOptionalAuthGuard)
     @Get(':id')
-    async getPostById(@Param('id') id: string): Promise<PostViewDto> {
-        return this.queryBus.execute<GetPostById>(new GetPostById(id));
+    @HttpCode(HttpStatus.OK)
+    async getPostById(
+        @Param('id') postId: string,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
+    ): Promise<PostViewDto> {
+        console.log('USER ID: ', user?.id);
+        console.log('POST ID: ', postId);
+
+        return this.queryBus.execute<GetPostById>(
+            new GetPostById(postId, user?.id),
+        );
     }
 
     // Update existing post by id with InputModel

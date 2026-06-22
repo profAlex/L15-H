@@ -52,6 +52,7 @@ export class JwtOptionalAuthGuard extends AuthGuard('jwt') {
     handleRequest(err: any, userData: any) {
         // 3. Если токен валидный — возвращаем юзера (он запишется в req.user)
         // Если токена нет или он протух — возвращаем null (в req.user запишется null)
+
         if (err || !userData) {
             return null;
         }
