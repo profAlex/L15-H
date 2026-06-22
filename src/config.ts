@@ -49,6 +49,7 @@ const getConfig = (): Config => {
     let mailHost = process.env.MAIL_HOST;
     let mailLogin = process.env.MAIL_LOGIN;
     let mailPass = process.env.MAIL_PASS;
+    // поправить тут?
     let mongoURI = process.env.MONGO_URI_LOCAL;
 
     // валидация

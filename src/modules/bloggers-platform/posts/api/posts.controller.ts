@@ -104,11 +104,16 @@ export class PostsController {
 
     // Returns all posts
     @ApiOperation({ summary: 'Returns all posts' })
+    @UseGuards(JwtOptionalAuthGuard)
     @Get()
+    @HttpCode(HttpStatus.OK)
     async getAllPosts(
         @Query() query: GetPostsQueryParams,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<PaginatedViewDto<PostViewDto>> {
-        return this.queryBus.execute<GetAllPosts>(new GetAllPosts(query));
+        return this.queryBus.execute<GetAllPosts>(
+            new GetAllPosts(query, user?.id),
+        );
     }
 
     // Create new post
@@ -131,8 +136,8 @@ export class PostsController {
         @Param('id') postId: string,
         @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<PostViewDto> {
-        console.log('USER ID: ', user?.id);
-        console.log('POST ID: ', postId);
+        // console.log('USER ID: ', user?.id);
+        // console.log('POST ID: ', postId);
 
         return this.queryBus.execute<GetPostById>(
             new GetPostById(postId, user?.id),

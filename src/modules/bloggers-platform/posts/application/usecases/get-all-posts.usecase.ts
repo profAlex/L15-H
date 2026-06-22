@@ -7,7 +7,10 @@ import { PostsQueryRepository } from '../../infrastructure/query/posts.query-rep
 export class GetAllPosts extends Query<
     PaginatedViewDto<PostViewDto> // This type represents the command execution result
 > {
-    constructor(public readonly query: GetPostsQueryParams) {
+    constructor(
+        public readonly query: GetPostsQueryParams,
+        public readonly userId: string | undefined,
+    ) {
         super();
     }
 }
@@ -18,7 +21,11 @@ export class GetAllPostsHandler implements IQueryHandler<GetAllPosts> {
 
     async execute({
         query,
+        userId,
     }: GetAllPosts): Promise<PaginatedViewDto<PostViewDto>> {
-        return this.postsQueryRepository.getAllPosts({ query });
+        return this.postsQueryRepository.getAllPosts({
+            sentUserId: userId,
+            query,
+        });
     }
 }

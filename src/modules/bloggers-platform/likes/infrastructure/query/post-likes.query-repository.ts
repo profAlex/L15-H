@@ -54,4 +54,23 @@ export class PostLikesQueryRepository {
             };
         });
     }
+
+    async getReactionListForPosts(
+        postIds: string[],
+        userId: string,
+    ): Promise<Array<{ postId: string; likeStatus: string }>> {
+        // 1. Ищем в базе документы, где userId совпадает,
+        // а также значение поля postId находится внутри нашего массива postIds
+        const reactions = await this.PostLikeModel.find({
+            userId: userId,
+            postId: { $in: postIds },
+        }).lean(); // Используем lean для максимальной скорости (получаем чистые JS-объекты)
+
+        // 2. Мапим результат к простому и понятному контракту,
+        // приводя ObjectId к строкам, чтобы getAllPosts не спотыкался
+        return reactions.map((reaction) => ({
+            postId: reaction.postId.toString(),
+            likeStatus: reaction.likeStatus, // Например: 'Like' или 'Dislike'
+        }));
+    }
 }

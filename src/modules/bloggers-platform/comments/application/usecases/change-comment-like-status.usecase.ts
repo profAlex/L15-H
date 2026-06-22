@@ -64,6 +64,7 @@ export class ChangeCommentLikeStatusHandler implements ICommandHandler<ChangeCom
                 commentId: commentId,
                 userId: userId,
             });
+            newLikeDocument.likeStatus = newLikeStatus;
 
             await this.commentLikesCommandRepository.save(newLikeDocument);
 
