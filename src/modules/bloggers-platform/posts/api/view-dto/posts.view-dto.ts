@@ -24,10 +24,9 @@
 // //     login: string;
 // // };
 
-import { ExtendedPostModel } from '../../domain/extended-post-model.schema';
 import { LikeStatus } from '../../../../../core/enums/like-status.enum';
-import { Post, PostDocument } from '../../domain/post.entity';
-import { FlattenMaps, Types } from 'mongoose';
+import { Post } from '../../domain/post.entity';
+import { Types } from 'mongoose';
 
 // export class PostViewDto {
 //     id: string;
@@ -101,7 +100,10 @@ export class PostViewDto {
         }[];
     };
 
-    constructor(post: Post & { _id: Types.ObjectId }) {
+    constructor(
+        post: Post & { _id: Types.ObjectId },
+        myStatus: LikeStatus = LikeStatus.None,
+    ) {
         this.id = post.id || post._id?.toString();
         this.title = post.title;
         this.shortDescription = post.shortDescription;
@@ -121,7 +123,7 @@ export class PostViewDto {
         this.extendedLikesInfo = {
             likesCount: post.extendedLikesInfo.likesCount,
             dislikesCount: post.extendedLikesInfo.dislikesCount,
-            myStatus: post.extendedLikesInfo.myStatus,
+            myStatus: myStatus,
 
             // Безопасно маппим массив, если он есть, создавая новые независимые объекты
             newestLikes: Array.isArray(post.extendedLikesInfo.newestLikes)
@@ -138,7 +140,10 @@ export class PostViewDto {
     }
 
     // Статический метод теперь просто вызывает конструктор
-    static mapToView(post: Post & { _id: Types.ObjectId }): PostViewDto {
-        return new PostViewDto(post);
+    static mapToView(
+        post: Post & { _id: Types.ObjectId },
+        myStatus: LikeStatus = LikeStatus.None,
+    ): PostViewDto {
+        return new PostViewDto(post, myStatus);
     }
 }

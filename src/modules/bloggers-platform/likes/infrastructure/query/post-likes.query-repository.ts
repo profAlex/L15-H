@@ -58,7 +58,7 @@ export class PostLikesQueryRepository {
     async getReactionListForPosts(
         postIds: string[],
         userId: string,
-    ): Promise<Array<{ postId: string; likeStatus: string }>> {
+    ): Promise<Array<{ postId: string; likeStatus: LikeStatus }>> {
         // 1. Ищем в базе документы, где userId совпадает,
         // а также значение поля postId находится внутри нашего массива postIds
         const reactions = await this.PostLikeModel.find({

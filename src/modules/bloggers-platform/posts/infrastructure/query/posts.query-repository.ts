@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { GetPostsQueryParams } from '../../api/input-dto/get-posts-query-params.input-dto';
 import { PostViewDto } from '../../api/view-dto/posts.view-dto';
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
@@ -8,6 +8,7 @@ import { SortDirection } from '../../../../../core/dto/base.query-params.input-d
 import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
 import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 import { PostLikesQueryRepository } from '../../../likes/infrastructure/query/post-likes.query-repository';
+import { LikeStatus } from '../../../../../core/enums/like-status.enum';
 
 @Injectable()
 export class PostsQueryRepository {
@@ -125,7 +126,7 @@ export class PostsQueryRepository {
         // });
 
         // 2. Собираем карту лайков текущего пользователя (чтобы поиск в массиве был O(1))
-        const likesMap = new Map<string, string>(); // Ключ: postId, Значение: likeStatus
+        const likesMap = new Map<string, LikeStatus>(); // Ключ: postId, Значение: likeStatus
 
         if (sentUserId && postsList.length > 0) {
             const postIdsList = postsList.map((post) => post._id.toString());
@@ -147,8 +148,8 @@ export class PostsQueryRepository {
             items: postsList.map((item) => {
                 const postIdStr = item._id.toString();
                 // Если статус есть в карте — берем его, иначе дефолтный 'None'
-                const myStatus = likesMap.get(postIdStr) || 'None';
-                return PostViewDto.mapToView(item);
+                const myStatus = likesMap.get(postIdStr) || LikeStatus.None;
+                return PostViewDto.mapToView(item, myStatus);
             }),
             page: pageNumber,
             size: pageSize,
