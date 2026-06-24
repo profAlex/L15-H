@@ -54,12 +54,31 @@ export class CommentsQueryRepository {
         query: GetCommentsQueryParams;
         userId?: string | undefined;
     }): Promise<PaginatedViewDto<CommentViewDto>> {
-        const { sortBy, sortDirection, pageNumber, pageSize } = query;
+        // 1. ЖЕСТКАЯ ЗАЩИТА: Проверяем, что sortBy существует и это не пустая строка
+        const sortByField =
+            query.sortBy && query.sortBy.trim() !== ''
+                ? query.sortBy
+                : 'createdAt';
+
+        // 2. Страхуем направление сортировки
+        const sortDirectionMultiplier =
+            query.sortDirection === SortDirection.Asc ? 1 : -1;
+
+        // 3. Страхуем пагинацию (на случай, если платформа пришлет NaN или 0)
+        const pageSize =
+            query.pageSize && query.pageSize > 0 ? query.pageSize : 10;
+        const pageNumber =
+            query.pageNumber && query.pageNumber > 0 ? query.pageNumber : 1;
+
+        // Используем метод класса, но если он выдаст NaN/0, берем безопасный расчет
+        const skip =
+            query.calculateSkip() >= 0
+                ? query.calculateSkip()
+                : (pageNumber - 1) * pageSize;
+
         const sentPostId = postId;
         const sentUserId = userId;
 
-        const skip = query.calculateSkip();
-        // const skip = (pageNumber - 1) * pageSize;
         const filter = {
             deletedAt: null,
             ...(sentPostId ? { relatedPostId: sentPostId } : {}),
@@ -67,8 +86,9 @@ export class CommentsQueryRepository {
 
         const [commentsList, totalCount] = await Promise.all([
             this.CommentModel.find(filter)
+                // 4. Передаем гарантированно чистые и валидные данные в sort
                 .sort({
-                    [sortBy]: sortDirection === SortDirection.Asc ? 1 : -1,
+                    [sortByField]: sortDirectionMultiplier,
                 })
                 .skip(skip)
                 .limit(pageSize)

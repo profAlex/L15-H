@@ -6,6 +6,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Comment, CommentModelType } from '../../domain/comment.entity';
 import { CommentsCommandRepository } from '../../infrastructure/comments.command-repository';
 import { UserContextDto } from '../../../../authorisation/guards/dto/user-context.dto';
+import { PostsQueryRepository } from '../../../posts/infrastructure/query/posts.query-repository';
+import { DomainException } from '../../../../../core/exceptions/domain-exceptions';
+import { DomainExceptionCode } from '../../../../../core/exceptions/domain-exception-codes';
 
 export class CreateNewComment extends Command<CommentViewDto> {
     constructor(
@@ -21,6 +24,7 @@ export class CreateNewComment extends Command<CommentViewDto> {
 export class CreateNewCommentHandler implements ICommandHandler<CreateNewComment> {
     constructor(
         private usersExternalQueryRepository: UsersExternalQueryRepository,
+        private postsQueryRepository: PostsQueryRepository,
         @InjectModel(Comment.name) private CommentModel: CommentModelType,
         private commentsCommandRepository: CommentsCommandRepository,
     ) {}
@@ -34,6 +38,13 @@ export class CreateNewCommentHandler implements ICommandHandler<CreateNewComment
             await this.usersExternalQueryRepository.getByIdOrNotFoundFail(
                 userId,
             );
+
+        if (!(await this.postsQueryRepository.ifPostExists(postId))) {
+            throw new DomainException({
+                code: DomainExceptionCode.PostNotFound,
+                message: 'Post not found',
+            });
+        }
 
         const comment = this.CommentModel.createInstance({
             relatedPostId: postId,
