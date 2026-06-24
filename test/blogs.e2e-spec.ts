@@ -139,7 +139,7 @@ describe('BlogsController (e2e)', () => {
         });
     });
 
-    it('should return 200 and paginated posts for specific blog', async () => {
+    it('GET /blogs/:blogId/posts - should return 200 and paginated posts for specific blog', async () => {
         // 1. Создаем блог
         const createBlogResponse = await request(app.getHttpServer())
             .post('/blogs')
@@ -462,5 +462,228 @@ describe('BlogsController (e2e)', () => {
         await request(app.getHttpServer())
             .delete('/blogs/6633973977c688d054942944')
             .expect(404);
+    });
+
+    // GET -> "/blogs/:blogId/posts": create 6 posts then: like post 1 by user 1,
+    // user 2; like post 2 by user 2, user 3; dislike post 3 by user 1;
+    // like post 4 by user 1, user 4, user 2, user 3; like post 5 by user 2,
+    // dislike by user 3; like post 6 by user 1, dislike by user 2.
+    // Get the posts by user 1 after all likes NewestLikes should be sorted in
+    // descending; status 200; content: posts array with pagination;
+    // used additional methods: POST -> /blogs, POST -> /blogs/:blogId/posts,
+    // PUT -> posts/:postId/like-status;
+    it('GET /blogs/:blogId/posts - should return 200 and paginated posts for specific blog', async () => {
+        // создание пользователя
+        const user_1 = {
+            login: 'qwerty1',
+            password: 'lg-885081',
+            email: 'example@example1.dev',
+        };
+        const user_2 = {
+            login: 'qwerty2',
+            password: 'lg-885082',
+            email: 'example@example2.dev',
+        };
+        const user_3 = {
+            login: 'qwerty3',
+            password: 'lg-885083',
+            email: 'example@example3.dev',
+        };
+        const login = 'admin';
+        const password = 'qwerty';
+        const authHeader =
+            'Basic ' + Buffer.from(`${login}:${password}`).toString('base64');
+
+        const createUserResponse1 = await request(app.getHttpServer())
+            .post('/users')
+            .set('Authorization', authHeader)
+            .send(user_1)
+            .expect(201);
+
+        const createUserResponse2 = await request(app.getHttpServer())
+            .post('/users')
+            .set('Authorization', authHeader)
+            .send(user_2)
+            .expect(201);
+
+        const createUserResponse3 = await request(app.getHttpServer())
+            .post('/users')
+            .set('Authorization', authHeader)
+            .send(user_3)
+            .expect(201);
+
+        // проверяем что юзер создался коректно
+        expect(createUserResponse1.body).toEqual({
+            id: expect.any(String),
+            login: user_1.login,
+            email: user_1.email,
+            createdAt: expect.any(String),
+        });
+
+        // логиним созданного юзера
+        const createAuthLoginResponse1 = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ loginOrEmail: user_1.login, password: user_1.password })
+            .expect(200);
+
+        // {
+        //     "accessToken" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWM1YWM4ODdiNmFiNTlhYjg2ZDFmMiIsImlhdCI6MTc4MDI0MzE0NiwiZXhwIjoxNzgwMjQ2NzQ2fQ.jDyTdoIO-_KcGpM3pEQsDWvPLiME2TscR_7UK0H2-qk"
+        // }
+
+        // проверяем что нам вернулись рефреш токен и эксесс токен
+        expect(createAuthLoginResponse1.body.accessToken).toBeDefined();
+        expect(createAuthLoginResponse1.body.accessToken).toEqual(
+            expect.any(String),
+        );
+
+        // проверяем, что массив заголовков set-cookie вообще существует
+        expect(createAuthLoginResponse1.headers['set-cookie']).toBeDefined();
+
+        // ищем нашу куку среди установленных кук
+        const rawCookies = createAuthLoginResponse1.headers['set-cookie'];
+
+        // Превращаем в массив в любом случае (если это была строка, оборачиваем в массив)
+        const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
+        const refreshTokenCookie = cookies.find((cookie) =>
+            cookie.includes('refreshToken'),
+        );
+
+        // кука с именем refreshToken была найдена
+        expect(refreshTokenCookie).toBeDefined();
+
+        // проверка флагов безопасности
+        expect(refreshTokenCookie).toContain('refreshToken=');
+        expect(refreshTokenCookie).toContain('HttpOnly');
+
+        // логиним еще двух пользователей
+        const createAuthLoginResponse2 = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ loginOrEmail: user_2.login, password: user_2.password })
+            .expect(200);
+
+        const createAuthLoginResponse3 = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ loginOrEmail: user_3.login, password: user_3.password })
+            .expect(200);
+
+        // создание блога с использованием basic-authorisation
+        const createBlogResponse = await request(app.getHttpServer())
+            .post('/blogs')
+            .set('Authorization', authHeader)
+            .send({
+                name: 'NodeJS Blog',
+                description: 'Backend news',
+                websiteUrl: 'https://nodejs.org',
+            })
+            .expect(201);
+
+        const blog = createBlogResponse.body;
+        // структура возвращаемого блога
+        /*
+        {
+        "id": "69f629a4b705ee0b0e4b874e",
+        "name": "NodeJS Blog",
+        "description": "Backend news",
+        "websiteUrl": "https://nodejs.org",
+        "createdAt": "2026-05-02T16:43:16.921Z",
+        "isMembership": true
+        }
+        */
+
+        // создание поста для этого блога
+        const createPostDto = {
+            title: 'NestJS Testing',
+            shortDescription: 'How to write e2e tests',
+            content: 'Very long and useful content about supertest...',
+            blogId: blog.id,
+        };
+
+        // console.log('ACCESS TOKEN: ', createAuthLoginResponse.body.accessToken);
+
+        // с использованием basic-authorisation
+        const createPostResponse = await request(app.getHttpServer())
+            .post(`/blogs/${blog.id}/posts`)
+            .set('Authorization', authHeader)
+            .send(createPostDto)
+            .expect(201);
+        const createdPost = createPostResponse.body;
+        // `Bearer ${createAuthLoginResponse.body.accessToken}`
+
+        // лайкаем пост первым пользователем
+        const createPostLike = await request(app.getHttpServer())
+            .put(`/posts/${createdPost.id}/like-status`)
+            .set(
+                'Authorization',
+                `Bearer ${createAuthLoginResponse1.body.accessToken}`,
+            )
+            .send({
+                likeStatus: 'Like',
+            })
+            .expect(204);
+
+        // лайкаем пост вторым пользователем
+        const createPostLike2 = await request(app.getHttpServer())
+            .put(`/posts/${createdPost.id}/like-status`)
+            .set(
+                'Authorization',
+                `Bearer ${createAuthLoginResponse2.body.accessToken}`,
+            )
+            .send({
+                likeStatus: 'Like',
+            })
+            .expect(204);
+
+        // лайкаем пост третьим пользователем
+        const createPostLike3 = await request(app.getHttpServer())
+            .put(`/posts/${createdPost.id}/like-status`)
+            .set(
+                'Authorization',
+                `Bearer ${createAuthLoginResponse3.body.accessToken}`,
+            )
+            .send({
+                likeStatus: 'Dislike',
+            })
+            .expect(204);
+
+        // проверяем состояние поста
+        const result = await request(app.getHttpServer())
+            .get(`/blogs/${blog.id}/posts`)
+            .expect(200);
+
+        // console.log(result.body);
+
+        // т.к. обращались как анонимные то должен быть None
+        expect(result.body.items[0].extendedLikesInfo.myStatus).toEqual('None');
+
+        // проверяем состояние поста но уже с токеном от имени второго пользователя
+        const resultWithToken = await request(app.getHttpServer())
+            .get(`/blogs/${blog.id}/posts`)
+            .set(
+                'Authorization',
+                `Bearer ${createAuthLoginResponse2.body.accessToken}`,
+            )
+            .expect(200);
+
+        console.log(resultWithToken.body);
+        console.log(resultWithToken.body.items[0].extendedLikesInfo);
+
+        // т.к. обращались как залогиненый юзер то должен быть Like
+        expect(
+            resultWithToken.body.items[0].extendedLikesInfo.myStatus,
+        ).toEqual('Like');
+
+        // проверяем состояние поста но уже с токеном от имени третьего пользователя
+        const resultWithToken2 = await request(app.getHttpServer())
+            .get(`/blogs/${blog.id}/posts`)
+            .set(
+                'Authorization',
+                `Bearer ${createAuthLoginResponse3.body.accessToken}`,
+            )
+            .expect(200);
+
+        // т.к. обращались как залогиненый юзер то должен быть Like
+        expect(
+            resultWithToken2.body.items[0].extendedLikesInfo.myStatus,
+        ).toEqual('Dislike');
     });
 });
