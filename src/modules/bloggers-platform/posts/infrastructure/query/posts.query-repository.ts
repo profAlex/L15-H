@@ -60,6 +60,13 @@ export class PostsQueryRepository {
 
         const likesMap = new Map<string, LikeStatus>(); // Ключ: postId, Значение: likeStatus
 
+        // ВСТАВЬ СЮДА ДЛЯ ТЕСТА:
+        console.log('=== ДИАГНОСТИКА БАГА ===');
+        console.log('1. Пришел ли userId в метод?:', sentUserId);
+        console.log(
+            '2. Что собрал postIdsList?:',
+            postsList.map((post) => post._id.toString()),
+        );
         if (sentUserId && postsList.length > 0) {
             const postIdsList = postsList.map((post) => post._id.toString());
 
@@ -72,6 +79,8 @@ export class PostsQueryRepository {
             userReactions.forEach((reaction) => {
                 likesMap.set(reaction.postId.toString(), reaction.likeStatus);
             });
+            console.log('=== ДИАГНОСТИКА БАГА ===');
+            console.log('3. Что вернула база лайков?:', userReactions);
         }
 
         return PaginatedViewDto.mapToView<PostViewDto>({

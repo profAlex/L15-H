@@ -340,6 +340,111 @@ describe('PostsController (e2e)', () => {
         });
     });
 
+    it('POST /posts - should return 400 when passed wrong body data for creation', async () => {
+        // создание пользователя
+        const user_1 = {
+            login: 'qwerty1',
+            password: 'lg-988508',
+            email: 'example@example.dev',
+        };
+        const login = 'admin';
+        const password = 'qwerty';
+        const authHeader =
+            'Basic ' + Buffer.from(`${login}:${password}`).toString('base64');
+
+        const createUserResponse = await request(app.getHttpServer())
+            .post('/users')
+            .set('Authorization', authHeader)
+            .send(user_1)
+            .expect(201);
+
+        // проверяем что юзер создался коректно
+        expect(createUserResponse.body).toEqual({
+            id: expect.any(String),
+            login: user_1.login,
+            email: user_1.email,
+            createdAt: expect.any(String),
+        });
+
+        // логиним созданного юзера
+        const createAuthLoginResponse = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ loginOrEmail: user_1.login, password: user_1.password })
+            .expect(200);
+
+        // {
+        //     "accessToken" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWM1YWM4ODdiNmFiNTlhYjg2ZDFmMiIsImlhdCI6MTc4MDI0MzE0NiwiZXhwIjoxNzgwMjQ2NzQ2fQ.jDyTdoIO-_KcGpM3pEQsDWvPLiME2TscR_7UK0H2-qk"
+        // }
+
+        // проверяем что нам вернулись рефреш токен и эксесс токен
+        expect(createAuthLoginResponse.body.accessToken).toBeDefined();
+        expect(createAuthLoginResponse.body.accessToken).toEqual(
+            expect.any(String),
+        );
+
+        // проверяем, что массив заголовков set-cookie вообще существует
+        expect(createAuthLoginResponse.headers['set-cookie']).toBeDefined();
+
+        // ищем нашу куку среди установленных кук
+        const rawCookies = createAuthLoginResponse.headers['set-cookie'];
+
+        // Превращаем в массив в любом случае (если это была строка, оборачиваем в массив)
+        const cookies = Array.isArray(rawCookies) ? rawCookies : [rawCookies];
+        const refreshTokenCookie = cookies.find((cookie) =>
+            cookie.includes('refreshToken'),
+        );
+
+        // кука с именем refreshToken была найдена
+        expect(refreshTokenCookie).toBeDefined();
+
+        // проверка флагов безопасности
+        expect(refreshTokenCookie).toContain('refreshToken=');
+        expect(refreshTokenCookie).toContain('HttpOnly');
+
+        // создание блога с использованием basic-authorisation
+        const createBlogResponse = await request(app.getHttpServer())
+            .post('/blogs')
+            .set('Authorization', authHeader)
+            .send({
+                name: 'NodeJS Blog',
+                description: 'Backend news',
+                websiteUrl: 'https://nodejs.org',
+            })
+            .expect(201);
+
+        const blog = createBlogResponse.body;
+        // структура возвращаемого блога
+        /*
+        {
+        "id": "69f629a4b705ee0b0e4b874e",
+        "name": "NodeJS Blog",
+        "description": "Backend news",
+        "websiteUrl": "https://nodejs.org",
+        "createdAt": "2026-05-02T16:43:16.921Z",
+        "isMembership": true
+        }
+        */
+
+        // создание неверного dto для поста этого блога
+        const createPostDto = {
+            title: '     ',
+            shortDescription: 'How to write e2e tests',
+            content: '      ',
+            blogId: blog.id,
+        };
+
+        // console.log('ACCESS TOKEN: ', createAuthLoginResponse.body.accessToken);
+
+        // с использованием basic-authorisation
+        const createPostResponse = await request(app.getHttpServer())
+            .post(`/posts`)
+            .set('Authorization', authHeader)
+            .send(createPostDto)
+            .expect(400);
+        const createdPost = createPostResponse.body;
+        // `Bearer ${createAuthLoginResponse.body.accessToken}`
+    });
+
     it('GET /posts/:postId/comments - should return 200 and paginated comments list', async () => {
         // создание пользователя
         const user_1 = {
