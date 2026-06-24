@@ -20,9 +20,12 @@ export class CommentsQueryRepository {
         private readonly commentLikesQueryRepository: CommentLikesQueryRepository,
     ) {}
 
-    async getCommentById(id: string): Promise<CommentViewDto | null> {
+    async getCommentById(
+        commentId: string,
+        userId?: string | undefined,
+    ): Promise<CommentViewDto | null> {
         const comment = await this.CommentModel.findOne({
-            _id: id,
+            _id: commentId,
             deletedAt: null,
         }).lean<FlattenMaps<CommentDocument> & { _id: Types.ObjectId }>();
 
@@ -30,7 +33,16 @@ export class CommentsQueryRepository {
             return null;
         }
 
-        return CommentViewDto.mapToView(comment);
+        let userReaction: LikeStatus = LikeStatus.None;
+        if (userId) {
+            userReaction =
+                await this.commentLikesQueryRepository.getReactionForComment(
+                    commentId,
+                    userId,
+                );
+        }
+
+        return CommentViewDto.mapToView(comment, userReaction);
     }
 
     async getCommentsByPostId({

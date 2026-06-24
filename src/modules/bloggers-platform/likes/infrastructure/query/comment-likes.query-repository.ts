@@ -34,6 +34,18 @@ export class CommentLikesQueryRepository {
         }));
     }
 
+    async getReactionForComment(
+        commentId: string,
+        userId: string,
+    ): Promise<LikeStatus> {
+        const reaction = await this.CommentLikeModel.findOne({
+            commentId: commentId,
+            userId: userId,
+        }).lean(); // Используем lean для максимальной скорости (получаем чистые JS-объекты)
+
+        return reaction?.likeStatus ?? LikeStatus.None;
+    }
+
     async getReactionListForComments(
         commentIds: string[],
         userId: string,

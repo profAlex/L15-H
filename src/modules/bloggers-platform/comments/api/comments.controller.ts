@@ -77,8 +77,10 @@ export class CommentsController {
         @Param('id') commentId: string,
         @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<CommentViewDto> {
-        const comment =
-            await this.commentsQueryRepository.getCommentById(commentId);
+        const comment = await this.commentsQueryRepository.getCommentById(
+            commentId,
+            user?.id,
+        );
 
         if (!comment) {
             // throw new NotFoundException("Comment not found!");
