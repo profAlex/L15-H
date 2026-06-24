@@ -33,6 +33,9 @@ import { BlogsQueryRepository } from '../infrastructure/query/blogs.query-reposi
 import { CreateBlogPostInputDto } from './input-dto/create-blog-post.input-dto';
 import { UpdateBlogInputDto } from '../dto/create-blog.dto';
 import { BasicAuthGuard } from '../../../authorisation/guards/basic/basic.auth-guard';
+import { JwtOptionalAuthGuard } from '../../../authorisation/guards/bearer/jwt.auth-guard';
+import { ExtractUserIfExistsFromRequest } from '../../../authorisation/decorators/extract-user-if-exists.decorator';
+import { UserContextDto } from '../../../authorisation/guards/dto/user-context.dto';
 
 @ApiTags('Blogs endpoint')
 @Controller('blogs')
@@ -85,13 +88,19 @@ export class BlogsController {
     @ApiParam({ name: 'blogId' }) //для сваггера
     // TODO: надо сделать плоский класс чтобы swagger подхватил то тчо внутри items[] находится, по аналогии с SwaggerBlogsPaginatedViewDto
     @ApiOkResponse({ type: PaginatedViewDto<PostViewDto> })
+    @UseGuards(JwtOptionalAuthGuard)
     @Get(':blogId/posts')
     @HttpCode(HttpStatus.OK)
     async getPostsByBlogId(
         @Param('blogId') blogId: string,
         @Query() query: GetPostsQueryParams,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<PaginatedViewDto<PostViewDto>> {
-        return this.postsService.getPostsByBlogId({ blogId, query });
+        return this.postsService.getPostsByBlogId({
+            userId: user?.id,
+            blogId: blogId,
+            query: query,
+        });
     }
 
     // Create new post for specific blog

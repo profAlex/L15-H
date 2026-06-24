@@ -58,32 +58,47 @@ export class PostsQueryRepository {
             this.PostModel.countDocuments(filter),
         ]);
 
-        // ЭТА ЧАСТЬ ПОКА ЧТО НЕ НУЖНА, НУЖНО БУДТЕТ ПРАВИТЬ КОГДА ПОЯВЯТСЯ КОММЕНТЫ И ЛАКИ С АВТОРИЗАЦИЕЙ
-        // const postIdsList = postsList.map((post) => post.id);
-        // let postsReactionList: (PostsLikesStorageModel & { _id: ObjectId })[] =
-        //     [];
-        // if (sentUserId) {
-        //     const postsReactionList =
-        //         await this.postsLikesQueryRepository.getReactionListForPosts(
-        //             postIdsList,
-        //             sentUserId,
-        //         );
-        // }
+        const likesMap = new Map<string, LikeStatus>(); // Ключ: postId, Значение: likeStatus
 
-        // return mapToPostListPaginatedOutput(postsList, postsReactionList, {
-        //     pageNumber: pageNumber,
-        //     pageSize: pageSize,
-        //     totalCount: totalCount,
-        // });
+        if (sentUserId && postsList.length > 0) {
+            const postIdsList = postsList.map((post) => post._id.toString());
+
+            const userReactions =
+                await this.postLikesQueryRepository.getReactionListForPosts(
+                    postIdsList,
+                    sentUserId,
+                );
+
+            userReactions.forEach((reaction) => {
+                likesMap.set(reaction.postId.toString(), reaction.likeStatus);
+            });
+        }
 
         return PaginatedViewDto.mapToView<PostViewDto>({
-            items: postsList.map((item) => PostViewDto.mapToView(item)),
+            items: postsList.map((item) => {
+                const postIdStr = item._id.toString();
+                const myStatus = likesMap.get(postIdStr) || LikeStatus.None;
+                return PostViewDto.mapToView(item, myStatus);
+            }),
             page: pageNumber,
             size: pageSize,
             totalCount: totalCount,
         });
     }
 
+    // задача - в каждый отдельный пост в общей выдаче, вставить статус лайка
+    // выданного (или не выданного) юзером, который запросил саму выдачу.
+    // то есть найти как лайкнул или не лайкнул пост в выдаче юзер
+
+    // для этого:
+    // 1) находим все посты по заданным параметрам сортировки
+    // 2) отдельно выдираем только адишники постов которые были сформированы
+    // выдачей в массив и идем в репозиторий харнящий лайки постов и находим
+    // по фильтру юзера все посты которые были им лайкнуты одним запросом find;
+    // формируем массив содержащий postId и likeStatus
+    // 3) далее сформированный массив переделываем в словарь map в котором каждому
+    // postId соответствует likeStatus
+    // 4) методами mapToView последовательно маппим результат
     async getAllPosts({
         sentUserId,
         query,
@@ -107,38 +122,17 @@ export class PostsQueryRepository {
             this.PostModel.countDocuments(filter),
         ]);
 
-        // ЭТА ЧАСТЬ ПОКА ЧТО НЕ НУЖНА, НУЖНО БУДТЕТ ПРАВИТЬ КОГДА ПОЯВЯТСЯ КОММЕНТЫ И ЛАКИ С АВТОРИЗАЦИЕЙ
-        // const postIdsList = postsList.map((post) => post.id);
-        // let postsReactionList: (PostsLikesStorageModel & { _id: ObjectId })[] =
-        //     [];
-        // if (sentUserId) {
-        //     const postsReactionList =
-        //         await this.postsLikesQueryRepository.getReactionListForPosts(
-        //             postIdsList,
-        //             sentUserId,
-        //         );
-        // }
-
-        // return mapToPostListPaginatedOutput(postsList, postsReactionList, {
-        //     pageNumber: pageNumber,
-        //     pageSize: pageSize,
-        //     totalCount: totalCount,
-        // });
-
-        // 2. Собираем карту лайков текущего пользователя (чтобы поиск в массиве был O(1))
         const likesMap = new Map<string, LikeStatus>(); // Ключ: postId, Значение: likeStatus
 
         if (sentUserId && postsList.length > 0) {
             const postIdsList = postsList.map((post) => post._id.toString());
 
-            // Запрашиваем из базы лайки только для этих постов от этого юзера
             const userReactions =
                 await this.postLikesQueryRepository.getReactionListForPosts(
                     postIdsList,
                     sentUserId,
                 );
 
-            // Заполняем хэш-карту: { "id_поста": "Like" }
             userReactions.forEach((reaction) => {
                 likesMap.set(reaction.postId.toString(), reaction.likeStatus);
             });
@@ -147,7 +141,6 @@ export class PostsQueryRepository {
         return PaginatedViewDto.mapToView<PostViewDto>({
             items: postsList.map((item) => {
                 const postIdStr = item._id.toString();
-                // Если статус есть в карте — берем его, иначе дефолтный 'None'
                 const myStatus = likesMap.get(postIdStr) || LikeStatus.None;
                 return PostViewDto.mapToView(item, myStatus);
             }),
