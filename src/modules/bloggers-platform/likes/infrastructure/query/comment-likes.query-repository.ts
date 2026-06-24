@@ -5,19 +5,20 @@ import {
     CommentLikeDocument,
     CommentLikeModelType,
 } from '../../domain/comment-like.entity';
+import { LikeStatus } from '../../../../../core/enums/like-status.enum';
 
 @Injectable()
 export class CommentLikesQueryRepository {
     constructor(
         @InjectModel(CommentLike.name)
-        private PostLikeModel: CommentLikeModelType,
+        private CommentLikeModel: CommentLikeModelType,
     ) {}
 
     async findSingleCommentLikeByPostIdAndUserId(
         sentPostId: string,
         sentUserId: string,
     ): Promise<CommentLikeDocument | null> {
-        return this.PostLikeModel.findOne({
+        return this.CommentLikeModel.findOne({
             postId: sentPostId,
             userId: sentUserId,
         });
@@ -27,9 +28,27 @@ export class CommentLikesQueryRepository {
         sentPostId: string,
         sentUserId: string,
     ): Promise<boolean> {
-        return !!(await this.PostLikeModel.exists({
+        return !!(await this.CommentLikeModel.exists({
             postId: sentPostId,
             userId: sentUserId,
+        }));
+    }
+
+    async getReactionListForComments(
+        commentIds: string[],
+        userId: string,
+    ): Promise<Array<{ commentId: string; likeStatus: LikeStatus }>> {
+        // ищем в базе документы, где userId совпадает,
+        // а также значение поля commentId находится внутри нашего массива commentIds
+        const reactions = await this.CommentLikeModel.find({
+            userId: userId,
+            commentId: { $in: commentIds },
+        }).lean(); // Используем lean для максимальной скорости (получаем чистые JS-объекты)
+
+        // приводя ObjectId к строкам, чтобы getCommentsByPostId не спотыкался
+        return reactions.map((reaction) => ({
+            commentId: reaction.commentId.toString(),
+            likeStatus: reaction.likeStatus, // Например: 'Like' или 'Dislike'
         }));
     }
 

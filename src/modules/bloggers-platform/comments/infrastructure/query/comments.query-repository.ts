@@ -10,11 +10,14 @@ import { GetCommentsQueryParams } from '../../api/input-dto/get-comments-query-p
 import { PaginatedViewDto } from '../../../../../core/dto/base.paginated.view-dto';
 import { SortDirection } from '../../../../../core/dto/base.query-params.input-dto';
 import { FlattenMaps, Types } from 'mongoose';
+import { LikeStatus } from '../../../../../core/enums/like-status.enum';
+import { CommentLikesQueryRepository } from '../../../likes/infrastructure/query/comment-likes.query-repository';
 
 @Injectable()
 export class CommentsQueryRepository {
     constructor(
         @InjectModel(Comment.name) private CommentModel: CommentModelType,
+        private readonly commentLikesQueryRepository: CommentLikesQueryRepository,
     ) {}
 
     async getCommentById(id: string): Promise<CommentViewDto | null> {
@@ -31,13 +34,13 @@ export class CommentsQueryRepository {
     }
 
     async getCommentsByPostId({
-        userId,
         postId,
         query,
+        userId,
     }: {
-        userId?: string | null;
         postId: string;
         query: GetCommentsQueryParams;
+        userId?: string | undefined;
     }): Promise<PaginatedViewDto<CommentViewDto>> {
         const { sortBy, sortDirection, pageNumber, pageSize } = query;
         const sentPostId = postId;
@@ -64,26 +67,33 @@ export class CommentsQueryRepository {
             this.CommentModel.countDocuments(filter),
         ]);
 
-        // ЭТА ЧАСТЬ ПОКА ЧТО НЕ НУЖНА, НУЖНО БУДТЕТ ПРАВИТЬ КОГДА ПОЯВЯТСЯ КОММЕНТЫ И ЛАКИ С АВТОРИЗАЦИЕЙ
-        // const postIdsList = commentsList.map((post) => post.id);
-        // let postsReactionList: (PostsLikesStorageModel & { _id: ObjectId })[] =
-        //     [];
-        // if (sentUserId) {
-        //     const postsReactionList =
-        //         await this.postsLikesQueryRepository.getReactionListForPosts(
-        //             postIdsList,
-        //             sentUserId,
-        //         );
-        // }
+        const likesMap = new Map<string, LikeStatus>(); // Ключ: postId, Значение: likeStatus
 
-        // return mapToPostListPaginatedOutput(commentsList, postsReactionList, {
-        //     pageNumber: pageNumber,
-        //     pageSize: pageSize,
-        //     totalCount: totalCount,
-        // });
+        if (sentUserId && commentsList.length > 0) {
+            const commentIdsList = commentsList.map((comment) =>
+                comment._id.toString(),
+            );
+
+            const userReactions =
+                await this.commentLikesQueryRepository.getReactionListForComments(
+                    commentIdsList,
+                    sentUserId,
+                );
+
+            userReactions.forEach((reaction) => {
+                likesMap.set(
+                    reaction.commentId.toString(),
+                    reaction.likeStatus,
+                );
+            });
+        }
 
         return PaginatedViewDto.mapToView<CommentViewDto>({
-            items: commentsList.map((item) => CommentViewDto.mapToView(item)),
+            items: commentsList.map((item) => {
+                const commentIdStr = item._id.toString();
+                const myStatus = likesMap.get(commentIdStr) || LikeStatus.None;
+                return CommentViewDto.mapToView(item, myStatus);
+            }),
             page: pageNumber,
             size: pageSize,
             totalCount: totalCount,

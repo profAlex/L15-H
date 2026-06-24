@@ -29,7 +29,10 @@ import { DeleteCommentById } from '../application/usecases/delete-comment-by-id.
 import { CommandBus } from '@nestjs/cqrs';
 import { UpdateCommentById } from '../application/usecases/update-comment-by-id.usecase';
 import { UpdateCommentInputDto } from './input-dto/update-comment.input-dto';
-import { JwtAuthGuard } from '../../../authorisation/guards/bearer/jwt.auth-guard';
+import {
+    JwtAuthGuard,
+    JwtOptionalAuthGuard,
+} from '../../../authorisation/guards/bearer/jwt.auth-guard';
 import { ChangePostLikeStatusInputDto } from '../../posts/api/input-dto/change-post-like-status.input.dto';
 import { ChangePostLikeStatus } from '../../posts/application/usecases/change-post-like-status.usecase';
 import { ChangeCommentLikeStatusInputDto } from './input-dto/change-comment-like-status.input.dto';
@@ -68,9 +71,11 @@ export class CommentsController {
 
     @ApiOperation({ summary: 'Get comment specified by id' })
     @ApiParam({ name: 'id' })
+    @UseGuards(JwtOptionalAuthGuard)
     @Get(':id')
     async getCommentById(
         @Param('id') commentId: string,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<CommentViewDto> {
         const comment =
             await this.commentsQueryRepository.getCommentById(commentId);
@@ -88,7 +93,7 @@ export class CommentsController {
 
     @ApiOperation({ summary: 'Update comment specified by id' })
     @ApiParam({ name: 'commentId' })
-    @UseGuards(BasicAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Put(':commentId')
     @HttpCode(HttpStatus.NO_CONTENT)
     async updateCommentById(
@@ -103,7 +108,7 @@ export class CommentsController {
 
     @ApiOperation({ summary: 'Delete comment specified by id' })
     @ApiParam({ name: 'commentId' })
-    @UseGuards(BasicAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Delete(':commentId')
     @HttpCode(HttpStatus.NO_CONTENT)
     async deleteCommentById(

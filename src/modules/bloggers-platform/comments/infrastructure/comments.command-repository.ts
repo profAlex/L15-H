@@ -45,8 +45,8 @@ export class CommentsCommandRepository {
         try {
             const updateQuery =
                 newStatus === LikeStatus.Like
-                    ? { 'extendedLikesInfo.likesCount': 1 }
-                    : { 'extendedLikesInfo.dislikesCount': 1 };
+                    ? { 'likesInfo.likesCount': 1 }
+                    : { 'likesInfo.dislikesCount': 1 };
 
             // атомарный апдейт для избегания состояния гонки
             const result = await this.CommentModel.updateOne(
@@ -85,8 +85,8 @@ export class CommentsCommandRepository {
         try {
             const fieldToDecrement =
                 oldStatus === LikeStatus.Like
-                    ? 'extendedLikesInfo.likesCount'
-                    : 'extendedLikesInfo.dislikesCount';
+                    ? 'likesInfo.likesCount'
+                    : 'likesInfo.dislikesCount';
 
             // создаем фильтр: ищем по ID И проверяем, что в поле больше 0
             const filter: any = {
@@ -139,8 +139,8 @@ export class CommentsCommandRepository {
                     },
                     {
                         $inc: {
-                            'extendedLikesInfo.likesCount': 1,
-                            'extendedLikesInfo.dislikesCount': -1,
+                            'likesInfo.likesCount': 1,
+                            'likesInfo.dislikesCount': -1,
                         },
                     },
                 );
@@ -152,8 +152,8 @@ export class CommentsCommandRepository {
                     },
                     {
                         $inc: {
-                            'extendedLikesInfo.likesCount': -1,
-                            'extendedLikesInfo.dislikesCount': 1,
+                            'likesInfo.likesCount': -1,
+                            'likesInfo.dislikesCount': 1,
                         },
                     },
                 );

@@ -77,13 +77,15 @@ export class PostsController {
     // Returns comments for specified post
     @ApiOperation({ summary: 'Returns comments for specified post' })
     @ApiParam({ name: 'postId' }) //для сваггера
+    @UseGuards(JwtOptionalAuthGuard)
     @Get(':postId/comments')
     async getCommentsByPostId(
         @Param('postId') postId: string,
         @Query() query: GetCommentsQueryParams,
+        @ExtractUserIfExistsFromRequest() user: UserContextDto,
     ): Promise<PaginatedViewDto<CommentViewDto>> {
         return this.queryBus.execute<GetCommentsForSpecificPostId>(
-            new GetCommentsForSpecificPostId(postId, query),
+            new GetCommentsForSpecificPostId(postId, query, user?.id),
         );
     }
 

@@ -23,19 +23,22 @@ export class UsersService {
         const passwordHash = await this.cryptoService.generateHash(
             dto.password,
         );
-        // console.log("<------------TEST HERE2");
+        // console.log('<------------TEST HERE2');
 
         if (!passwordHash) {
             throw new InternalServerErrorException("Couldn't generate hash");
         }
         const confirmationCode = UUIDGeneratorUtil.generateUUID();
-        // console.log("<------------TEST HERE3");
+        // console.log('<------------TEST HERE3');
         const newUser = this.UserModel.createInstance({
             login: dto.login,
             email: dto.email,
             passwordHash: passwordHash,
             confirmationCode: confirmationCode,
         });
+
+        // console.log('<------------TEST HERE4');
+
         await this.usersCommandRepository.save(newUser);
 
         return newUser._id.toString();

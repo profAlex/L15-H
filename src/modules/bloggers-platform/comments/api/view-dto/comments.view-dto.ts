@@ -83,7 +83,10 @@ export class CommentViewDto {
         myStatus: LikeStatus;
     };
 
-    constructor(comment: Comment & { _id: Types.ObjectId }) {
+    constructor(
+        comment: Comment & { _id: Types.ObjectId },
+        myStatus?: LikeStatus,
+    ) {
         this.id = comment.id || comment._id?.toString() || '';
         this.content = comment.content;
 
@@ -102,13 +105,14 @@ export class CommentViewDto {
         this.likesInfo = {
             likesCount: comment.likesInfo.likesCount,
             dislikesCount: comment.likesInfo.dislikesCount,
-            myStatus: comment.likesInfo.myStatus,
+            myStatus: myStatus ?? comment.likesInfo.myStatus ?? LikeStatus.None,
         };
     }
 
     static mapToView(
         comment: Comment & { _id: Types.ObjectId },
+        myStatus?: LikeStatus,
     ): CommentViewDto {
-        return new CommentViewDto(comment);
+        return new CommentViewDto(comment, myStatus);
     }
 }

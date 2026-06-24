@@ -19,7 +19,7 @@ export class GetCommentsForSpecificPostId extends Query<
     constructor(
         public readonly postId: string,
         public readonly query: GetCommentsQueryParams,
-        public readonly userId?: string | null,
+        public readonly userId?: string | undefined,
     ) {
         super();
     }
@@ -32,19 +32,18 @@ export class GetCommentsForSpecificPostIdHandler implements IQueryHandler<GetCom
         private readonly commentsQueryRepository: CommentsQueryRepository,
     ) {}
 
-    async execute({ userId, postId, query }: GetCommentsForSpecificPostId) {
-        // const { userId, postId, query } = busQueryDto;
+    async execute({ postId, query, userId }: GetCommentsForSpecificPostId) {
+        // const { postId, query, userId } = busQueryDto;
         if (!(await this.postsQueryRepository.ifPostExists(postId))) {
-            // throw new NotFoundException("Post not found");
             throw new DomainException({
-                code: DomainExceptionCode.PostNotFound,
+                code: DomainExceptionCode.CommentNotFound,
                 message: 'Post not found',
             });
         }
         return await this.commentsQueryRepository.getCommentsByPostId({
-            userId,
             postId,
             query,
+            userId,
         });
     }
 }

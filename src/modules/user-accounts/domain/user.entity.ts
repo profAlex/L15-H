@@ -76,8 +76,11 @@ export class User {
         type: String,
         required: false,
         default: null,
-        unique: true,
-        sparse: true,
+        // unique: true, <-- Убираем отсюда
+        index: {
+            unique: true, // <-- Переносим сюда, чтобы они работали в паре
+            partialFilterExpression: { recoveryCode: { $type: 'string' } },
+        },
     })
     recoveryCode!: string | null;
 
