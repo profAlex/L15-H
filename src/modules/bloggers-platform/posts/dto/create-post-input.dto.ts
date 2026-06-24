@@ -42,6 +42,7 @@ export class UpdatePostInputDto {
     )
     @IsString()
     @IsNotEmpty()
+    @MaxLength(30)
     title: string = '';
 
     @ApiProperty({ type: String, required: true })
@@ -50,6 +51,7 @@ export class UpdatePostInputDto {
     )
     @IsString()
     @IsNotEmpty()
+    @MaxLength(100)
     shortDescription: string = '';
 
     @ApiProperty({ type: String, required: true })
@@ -58,6 +60,7 @@ export class UpdatePostInputDto {
     )
     @IsString()
     @IsNotEmpty()
+    @MaxLength(1000)
     content: string = '';
 
     @ApiProperty({ type: String, required: true })
